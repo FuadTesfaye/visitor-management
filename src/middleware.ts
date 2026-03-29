@@ -16,8 +16,11 @@ export function middleware(request: NextRequest) {
   // Get token from cookies
   const token = request.cookies.get('auth-token')?.value;
 
+  console.log(`[MIDDLEWARE] ${pathname} - Token: ${token ? 'Present' : 'Missing'}`);
+
   // If no token, redirect to login
   if (!token) {
+    console.log(`[MIDDLEWARE] No token found. Redirecting to login...`);
     const loginUrl = new URL('/login', request.url);
     return NextResponse.redirect(loginUrl);
   }
@@ -25,37 +28,45 @@ export function middleware(request: NextRequest) {
   // Verify token
   const user = verifyToken(token);
   if (!user) {
+    console.log(`[MIDDLEWARE] Invalid token. Redirecting to login...`);
     const loginUrl = new URL('/login', request.url);
     return NextResponse.redirect(loginUrl);
   }
 
   // Role-based access control
   if (pathname.startsWith('/visitor') && user.role !== 'visitor') {
+    console.log(`[MIDDLEWARE] Role mismatch (visitor). Required: visitor, Got: ${user.role}`);
     const loginUrl = new URL('/login', request.url);
     return NextResponse.redirect(loginUrl);
   }
 
   if (pathname.startsWith('/approver') && user.role !== 'approver') {
+    console.log(`[MIDDLEWARE] Role mismatch (approver). Required: approver, Got: ${user.role}`);
     const loginUrl = new URL('/login', request.url);
     return NextResponse.redirect(loginUrl);
   }
 
   if (pathname.startsWith('/admin') && user.role !== 'admin') {
+    console.log(`[MIDDLEWARE] Role mismatch (admin). Required: admin, Got: ${user.role}`);
     const loginUrl = new URL('/login', request.url);
     return NextResponse.redirect(loginUrl);
   }
 
   // Add user info to headers for API routes
-  const response = NextResponse.next();
-  response.headers.set('x-user-id', user.userId);
-  response.headers.set('x-user-role', user.role);
-  response.headers.set('x-user-email', user.email);
-  response.headers.set('x-user-name', user.name);
+  const requestHeaders = new Headers(request.headers);
+  requestHeaders.set('x-user-id', user.userId);
+  requestHeaders.set('x-user-role', user.role);
+  requestHeaders.set('x-user-email', user.email);
+  requestHeaders.set('x-user-name', user.name);
   if (user.departmentId) {
-    response.headers.set('x-user-department-id', user.departmentId);
+    requestHeaders.set('x-user-department-id', user.departmentId);
   }
 
-  return response;
+  return NextResponse.next({
+    request: {
+      headers: requestHeaders,
+    },
+  });
 }
 
 export const config = {

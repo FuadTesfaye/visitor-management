@@ -1,255 +1,375 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { useRouter } from 'next/navigation';
+import { Html5QrcodeScanner, Html5QrcodeSupportedFormats } from 'html5-qrcode';
+import { 
+  QrCode, 
+  Camera, 
+  CheckCircle2, 
+  XCircle, 
+  RefreshCcw, 
+  User, 
+  Building2, 
+  History,
+  ShieldCheck,
+  AlertCircle
+} from 'lucide-react';
+import { format } from 'date-fns';
+import { toast, Toaster } from 'sonner';
 
-export default function QRScanner() {
-  const router = useRouter();
-  const [scanning, setScanning] = useState(false);
-  const [result, setResult] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-  const [visitorInfo, setVisitorInfo] = useState<any>(null);
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const streamRef = useRef<MediaStream | null>(null);
+import DashboardLayout from '@/components/layouts/DashboardLayout';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { cn } from '@/lib/utils';
+
+interface ScanResult {
+  status: 'success' | 'error';
+  message: string;
+  visitor?: {
+    name: string;
+    department: string;
+    fayda: string;
+  };
+  type?: 'check-in' | 'check-out';
+  timestamp: Date;
+}
+
+export default function AdminScanPage() {
+  const [isScanning, setIsScanning] = useState(false);
+  const [scanHistory, setScanHistory] = useState<ScanResult[]>([]);
+  const [lastResult, setLastResult] = useState<ScanResult | null>(null);
+  const scannerRef = useRef<Html5QrcodeScanner | null>(null);
 
   useEffect(() => {
     return () => {
-      stopCamera();
+      if (scannerRef.current) {
+        scannerRef.current.clear().catch(console.error);
+      }
     };
   }, []);
 
-  const startCamera = async () => {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: 'environment' }
-      });
-      
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-        streamRef.current = stream;
-        setScanning(true);
-      }
-    } catch (err) {
-      setError('Camera access denied or not available');
-      console.error('Camera error:', err);
-    }
-  };
-
-  const stopCamera = () => {
-    if (streamRef.current) {
-      streamRef.current.getTracks().forEach(track => track.stop());
-      streamRef.current = null;
-    }
-    if (videoRef.current) {
-      videoRef.current.srcObject = null;
-    }
-    setScanning(false);
-  };
-
-  const handleManualTokenSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const formData = new FormData(e.target as HTMLFormElement);
-    const token = formData.get('token') as string;
+  const startScanner = () => {
+    setIsScanning(true);
     
-    if (!token) {
-      setError('Please enter a token');
-      return;
+    // Cleanup existing scanner if any
+    if (scannerRef.current) {
+      scannerRef.current.clear().then(() => {
+        initializeScanner();
+      }).catch(console.error);
+    } else {
+      initializeScanner();
     }
-
-    await processToken(token);
   };
 
-  const processToken = async (token: string) => {
-    setLoading(true);
-    setError('');
-    setVisitorInfo(null);
+  const initializeScanner = () => {
+    const scanner = new Html5QrcodeScanner(
+      "qr-reader",
+      { 
+        fps: 10, 
+        qrbox: { width: 250, height: 250 },
+        formatsToSupport: [ Html5QrcodeSupportedFormats.QR_CODE ]
+      },
+      /* verbose= */ false
+    );
+
+    scanner.render(onScanSuccess, onScanError);
+    scannerRef.current = scanner;
+  };
+
+  const onScanSuccess = async (decodedText: string) => {
+    // Pause scanner to give feedback
+    if (scannerRef.current) {
+      scannerRef.current.pause();
+    }
 
     try {
-      const response = await fetch('/api/scan/checkin', {
+      toast.loading('Processing token...', { id: 'scan-process' });
+      
+      // Try check-in first
+      let response = await fetch('/api/scan/checkin', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ qrToken: token }),
+        body: JSON.stringify({ qrToken: decodedText }),
       });
 
-      const data = await response.json();
+      let data = await response.json();
+      let type: 'check-in' | 'check-out' = 'check-in';
+
+      // If check-in fails because already checked in, try check-out
+      if (!response.ok && data.error === 'Visitor already checked in') {
+        response = await fetch('/api/scan/checkout', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ qrToken: decodedText }),
+        });
+        data = await response.json();
+        type = 'check-out';
+      }
 
       if (response.ok) {
-        setResult(token);
-        setVisitorInfo(data.visitor);
-        stopCamera();
+        toast.success(`Successful ${type}`, { id: 'scan-process' });
+        const result: ScanResult = {
+          status: 'success',
+          message: data.message,
+          visitor: {
+            name: data.visitorName || data.visitRequest?.visitorName || 'Unknown',
+            department: data.departmentName || data.visitRequest?.departmentName || 'Security',
+            fayda: data.visitRequest?.faydaNumber || 'XXXXXXXXXXXXXX'
+          },
+          type,
+          timestamp: new Date()
+        };
+        setLastResult(result);
+        setScanHistory(prev => [result, ...prev].slice(0, 10));
+        
+        // Success audio feedback (mock)
+        playFeedbackSound(true);
       } else {
-        setError(data.error || 'Invalid QR code');
+        toast.error(data.error || 'Invalid or expired token', { id: 'scan-process' });
+        const result: ScanResult = {
+          status: 'error',
+          message: data.error || 'Scan failed',
+          timestamp: new Date()
+        };
+        setLastResult(result);
+        playFeedbackSound(false);
       }
     } catch (error) {
-      setError('Network error. Please try again.');
+      toast.error('Network error processing scan', { id: 'scan-process' });
     } finally {
-      setLoading(false);
+      // Resume scanner after 2 seconds
+      setTimeout(() => {
+        if (scannerRef.current && isScanning) {
+          scannerRef.current.resume();
+        }
+      }, 2000);
     }
   };
 
-  const handleLogout = async () => {
-    await fetch('/api/auth/logout', { method: 'POST' });
-    router.push('/login');
+  const onScanError = (errorMessage: string) => {
+    // We don't want to flood the UI with errors from the library
+    // console.warn(`QR error: ${errorMessage}`);
   };
 
-  const resetScanner = () => {
-    setResult(null);
-    setVisitorInfo(null);
-    setError('');
+  const playFeedbackSound = (success: boolean) => {
+    // In a real browser we might play a beep
+  };
+
+  const stopScanner = () => {
+    if (scannerRef.current) {
+      scannerRef.current.clear().then(() => {
+        setIsScanning(false);
+        scannerRef.current = null;
+      }).catch(console.error);
+    }
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="bg-white shadow">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-6">
-            <h1 className="text-3xl font-bold text-gray-900">QR Scanner</h1>
-            <div className="flex space-x-4">
-              <a
-                href="/admin/dashboard"
-                className="bg-gray-600 hover:bg-gray-700 text-white font-medium py-2 px-4 rounded"
-              >
-                Dashboard
-              </a>
-              <button
-                onClick={handleLogout}
-                className="bg-red-600 hover:bg-red-700 text-white font-medium py-2 px-4 rounded"
-              >
-                Logout
-              </button>
-            </div>
+    <DashboardLayout>
+      <Toaster position="top-right" richColors />
+      <div className="space-y-8">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight text-neutral-900 dark:text-neutral-100">
+              Security Portal
+            </h1>
+            <p className="text-neutral-500 dark:text-neutral-400">
+              Scan visitor passes for seamless check-in and check-out tracking.
+            </p>
+          </div>
+          <Badge variant="outline" className="h-8 gap-2 bg-neutral-900 text-white dark:bg-neutral-100 dark:text-neutral-900 px-3">
+            <ShieldCheck className="w-4 h-4" />
+            Security Mode Active
+          </Badge>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
+          {/* Scanner Card */}
+          <Card className="border-neutral-200 dark:border-neutral-800 shadow-xl overflow-hidden bg-white dark:bg-neutral-900 ring-1 ring-neutral-200 dark:ring-neutral-800">
+            <CardHeader className="bg-neutral-900 text-white pb-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="text-lg">Live Scanner</CardTitle>
+                  <CardDescription className="text-neutral-400">Align QR code within the frame.</CardDescription>
+                </div>
+                {isScanning && (
+                  <div className="flex items-center gap-2">
+                    <span className="flex h-2 w-2 rounded-full bg-red-500 animate-pulse" />
+                    <span className="text-[10px] font-bold uppercase tracking-widest text-red-500">Live Feed</span>
+                  </div>
+                )}
+              </div>
+            </CardHeader>
+            <CardContent className="p-0">
+              <div className="aspect-square w-full relative bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center border-b border-neutral-100 dark:border-neutral-800">
+                {!isScanning ? (
+                  <div className="p-12 text-center space-y-6 flex flex-col items-center">
+                    <div className="w-20 h-20 bg-neutral-200 dark:bg-neutral-700 rounded-full flex items-center justify-center text-neutral-400">
+                      <Camera className="w-10 h-10" />
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-semibold text-neutral-900 dark:text-neutral-100 mb-2">Camera Disabled</h3>
+                      <p className="text-sm text-neutral-500 max-w-[280px]">
+                        Start the scanner and grant camera permissions to begin processing visitors.
+                      </p>
+                    </div>
+                    <Button 
+                      size="lg" 
+                      onClick={startScanner}
+                      className="w-full sm:w-auto px-12 h-12 text-md font-bold shadow-lg"
+                    >
+                      <Camera className="mr-2 h-5 w-5" />
+                      Initialize Camera
+                    </Button>
+                  </div>
+                ) : (
+                  <div id="qr-reader" className="w-full h-full overflow-hidden" />
+                )}
+                
+                {/* Overlay Feedback for success/error */}
+                {lastResult && (
+                  <div className={cn(
+                    "absolute inset-0 z-10 flex items-center justify-center transition-all duration-300 pointer-events-none",
+                    lastResult.status === 'success' ? "bg-green-500/20" : "bg-red-500/20"
+                  )}>
+                    <div className={cn(
+                      "p-8 rounded-full shadow-2xl animate-in zoom-in-95 backdrop-blur-md",
+                      lastResult.status === 'success' ? "bg-green-600 text-white" : "bg-red-600 text-white"
+                    )}>
+                      {lastResult.status === 'success' ? <CheckCircle2 className="w-16 h-16" /> : <XCircle className="w-16 h-16" />}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </CardContent>
+            {isScanning && (
+              <div className="p-4 bg-neutral-50 dark:bg-neutral-800 flex justify-center">
+                <Button variant="outline" size="sm" onClick={stopScanner} className="text-neutral-600 gap-2">
+                  <RefreshCcw className="w-4 h-4" />
+                  Reset Scanner
+                </Button>
+              </div>
+            )}
+          </Card>
+
+          {/* Results Side */}
+          <div className="space-y-6">
+            {/* Last Result Card */}
+            <Card className={cn(
+              "border-dashed border-2 shadow-sm",
+              lastResult?.status === 'success' ? "border-green-500 bg-green-50/10" : 
+              lastResult?.status === 'error' ? "border-red-500 bg-red-50/10" : 
+              "border-neutral-200 dark:border-neutral-800"
+            )}>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-md flex items-center gap-2">
+                  <QrCode className="w-4 h-4" />
+                  Latest Scan Result
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="min-h-[160px] flex items-center justify-center">
+                {!lastResult ? (
+                  <div className="text-center text-neutral-400 py-8">
+                    <p className="text-sm italic">Scan a code to see details here.</p>
+                  </div>
+                ) : lastResult.status === 'success' ? (
+                  <div className="w-full space-y-4">
+                    <div className="flex items-center gap-4">
+                      <div className="w-12 h-12 bg-green-100 text-green-600 rounded-full flex items-center justify-center shrink-0">
+                        <User className="w-6 h-6" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-0.5">
+                          <h4 className="text-lg font-bold text-neutral-900 dark:text-neutral-100 truncate">
+                            {lastResult.visitor?.name}
+                          </h4>
+                          <Badge className={cn(
+                            "text-[10px] uppercase h-4 px-1.5",
+                            lastResult.type === 'check-in' ? "bg-green-600" : "bg-blue-600"
+                          )}>
+                            {lastResult.type}
+                          </Badge>
+                        </div>
+                        <div className="flex items-center gap-3 text-sm text-neutral-500">
+                          <span className="flex items-center gap-1 font-medium"><Building2 className="w-3 h-3" /> {lastResult.visitor?.department}</span>
+                          <span className="text-xs font-mono bg-neutral-100 dark:bg-neutral-800 px-1.5 py-0.5 rounded uppercase">ID: {lastResult.visitor?.fayda}</span>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="p-3 bg-white dark:bg-neutral-900 border border-green-100 dark:border-green-800 rounded-lg shadow-sm">
+                      <p className="text-sm font-medium text-green-800 dark:text-green-400 flex items-center gap-2">
+                        <CheckCircle2 className="w-4 h-4" />
+                        {lastResult.message}
+                      </p>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="text-center space-y-4 py-4 w-full">
+                    <div className="inline-flex p-3 bg-red-100 text-red-600 rounded-full mb-2">
+                      <AlertCircle className="w-8 h-8" />
+                    </div>
+                    <h4 className="text-lg font-bold text-red-600">Scan Failed</h4>
+                    <p className="text-sm text-neutral-500 font-medium px-4">{lastResult.message}</p>
+                    <Button variant="outline" size="sm" onClick={() => setLastResult(null)} className="mt-2">Clear Result</Button>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* History Card */}
+            <Card className="border-neutral-200 dark:border-neutral-800 shadow-sm overflow-hidden bg-white dark:bg-neutral-900">
+              <CardHeader className="bg-neutral-50/50 dark:bg-neutral-800/50 border-b border-neutral-100 dark:border-neutral-800 py-3">
+                <CardTitle className="text-md flex items-center gap-2">
+                  <History className="w-4 h-4" />
+                  Recent Session History
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-0">
+                {scanHistory.length === 0 ? (
+                  <div className="py-12 text-center text-neutral-400 text-xs italic">
+                    No scans in current session.
+                  </div>
+                ) : (
+                  <div className="max-h-[300px] overflow-y-auto">
+                    {scanHistory.map((scan, i) => (
+                      <div 
+                        key={i} 
+                        className={cn(
+                          "p-4 flex items-center justify-between border-b last:border-0 border-neutral-100 dark:border-neutral-800",
+                          scan.status === 'error' ? "bg-red-50/30" : "bg-transparent"
+                        )}
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className={cn(
+                            "w-8 h-8 rounded-full flex items-center justify-center shrink-0",
+                            scan.status === 'success' ? "bg-neutral-100 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-400" : "bg-red-100 text-red-600"
+                          )}>
+                            {scan.status === 'success' ? <User className="w-4 h-4" /> : <XCircle className="w-4 h-4" />}
+                          </div>
+                          <div>
+                            <p className="text-sm font-bold truncate max-w-[140px]">
+                              {scan.visitor?.name || 'Invalid Token'}
+                            </p>
+                            <p className="text-[10px] text-neutral-400 uppercase font-black tracking-tighter">
+                              {scan.status === 'success' ? `${scan.type} • ` : ''}{format(scan.timestamp, 'h:mm:ss a')}
+                            </p>
+                          </div>
+                        </div>
+                        {scan.status === 'success' && (
+                          <Badge variant="outline" className="text-[9px] uppercase font-bold py-0 h-4 border-neutral-300">
+                            {scan.visitor?.department}
+                          </Badge>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
           </div>
         </div>
       </div>
-
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {error && (
-          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-6">
-            {error}
-          </div>
-        )}
-
-        {visitorInfo ? (
-          <div className="bg-white shadow rounded-lg p-6">
-            <div className="mb-4">
-              <h2 className="text-2xl font-bold text-green-600 mb-4">Check-in Successful!</h2>
-              <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">Visitor Information</h3>
-                <div className="space-y-2">
-                  <p><strong>Name:</strong> {visitorInfo.name}</p>
-                  <p><strong>Department:</strong> {visitorInfo.department}</p>
-                  <p><strong>Purpose:</strong> {visitorInfo.purpose}</p>
-                  <p><strong>Check-in Time:</strong> {new Date(visitorInfo.checkInTime).toLocaleString()}</p>
-                </div>
-              </div>
-            </div>
-            <div className="flex space-x-4">
-              <button
-                onClick={resetScanner}
-                className="bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2 px-4 rounded"
-              >
-                Scan Next
-              </button>
-              <a
-                href="/admin/dashboard"
-                className="bg-gray-600 hover:bg-gray-700 text-white font-medium py-2 px-4 rounded"
-              >
-                View Dashboard
-              </a>
-            </div>
-          </div>
-        ) : (
-          <div className="space-y-6">
-            <div className="bg-white shadow rounded-lg p-6">
-              <h2 className="text-xl font-semibold text-gray-900 mb-4">Scan QR Code</h2>
-              
-              {!scanning ? (
-                <div className="space-y-4">
-                  <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
-                    <div className="text-gray-600 mb-4">
-                      <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                      </svg>
-                      <p className="mt-2">Camera is off</p>
-                    </div>
-                    <button
-                      onClick={startCamera}
-                      className="bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2 px-4 rounded"
-                    >
-                      Start Camera
-                    </button>
-                  </div>
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  <div className="relative">
-                    <video
-                      ref={videoRef}
-                      autoPlay
-                      playsInline
-                      className="w-full rounded-lg"
-                    />
-                    <div className="absolute inset-0 border-2 border-green-500 rounded-lg pointer-events-none">
-                      <div className="absolute top-0 left-0 w-8 h-8 border-t-4 border-l-4 border-green-500"></div>
-                      <div className="absolute top-0 right-0 w-8 h-8 border-t-4 border-r-4 border-green-500"></div>
-                      <div className="absolute bottom-0 left-0 w-8 h-8 border-b-4 border-l-4 border-green-500"></div>
-                      <div className="absolute bottom-0 right-0 w-8 h-8 border-b-4 border-r-4 border-green-500"></div>
-                    </div>
-                  </div>
-                  <div className="flex space-x-4">
-                    <button
-                      onClick={stopCamera}
-                      className="bg-red-600 hover:bg-red-700 text-white font-medium py-2 px-4 rounded"
-                    >
-                      Stop Camera
-                    </button>
-                  </div>
-                  <div className="text-sm text-gray-600 text-center">
-                    Note: QR scanning requires camera permissions. For demo purposes, use manual token entry below.
-                  </div>
-                </div>
-              )}
-            </div>
-
-            <div className="bg-white shadow rounded-lg p-6">
-              <h2 className="text-xl font-semibold text-gray-900 mb-4">Manual Token Entry</h2>
-              <p className="text-gray-600 mb-4">
-                Enter the QR token manually if camera scanning is not available.
-              </p>
-              <form onSubmit={handleManualTokenSubmit} className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Token
-                  </label>
-                  <input
-                    type="text"
-                    name="token"
-                    required
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-                    placeholder="Enter QR token..."
-                  />
-                </div>
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2 px-4 rounded disabled:opacity-50"
-                >
-                  {loading ? 'Processing...' : 'Process Token'}
-                </button>
-              </form>
-            </div>
-
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-              <h3 className="text-sm font-medium text-blue-800 mb-2">Demo Instructions</h3>
-              <p className="text-sm text-blue-600">
-                To test the system: 1) Submit a visit request as a visitor, 2) Approve it as an approver, 
-                3) Copy the QR token from the approval response, 4) Use the manual token entry here to check in.
-              </p>
-            </div>
-          </div>
-        )}
-      </div>
-    </div>
+    </DashboardLayout>
   );
 }

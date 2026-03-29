@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { visitLogs, visitRequests, findVisitRequestById } from '@/lib/data-store';
+import { visitLogs, visitRequests, findVisitRequestById, findVisitRequestByToken } from '@/lib/data-store';
 
 export async function POST(request: NextRequest) {
   try {
@@ -13,14 +13,25 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { visitRequestId } = await request.json();
+    const { qrToken } = await request.json();
 
-    if (!visitRequestId) {
+    if (!qrToken) {
       return NextResponse.json(
-        { error: 'Visit request ID is required' },
+        { error: 'QR token is required' },
         { status: 400 }
       );
     }
+
+    // Find visit request by QR token
+    const visitRequest = findVisitRequestByToken(qrToken);
+    if (!visitRequest) {
+      return NextResponse.json(
+        { error: 'Invalid QR code' },
+        { status: 404 }
+      );
+    }
+
+    const visitRequestId = visitRequest.id;
 
     // Find active check-in log
     const activeLog = visitLogs.find(log => 
@@ -36,8 +47,6 @@ export async function POST(request: NextRequest) {
 
     // Update check-out time
     activeLog.checkOutTime = new Date();
-
-    const visitRequest = findVisitRequestById(visitRequestId);
 
     return NextResponse.json({
       message: 'Check-out successful',

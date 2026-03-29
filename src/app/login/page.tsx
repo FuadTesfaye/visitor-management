@@ -2,139 +2,200 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { useForm } from 'react-hook-form';
+import * as z from 'zod';
+import { ClipboardList, Loader2, KeyRound, Mail } from 'lucide-react';
+import { toast, Toaster } from 'sonner';
+
+import { Button } from '@/components/ui/button';
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '@/components/ui/form';
+import { Input } from '@/components/ui/input';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Separator } from '@/components/ui/separator';
+
+const formSchema = z.object({
+  email: z.string().email({
+    message: "Please enter a valid email address.",
+  }),
+  password: z.string().min(6, {
+    message: "Password must be at least 6 characters.",
+  }),
+});
 
 export default function LoginPage() {
-  const [formData, setFormData] = useState({
-    email: '',
-    password: '',
-  });
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
   const router = useRouter();
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-    setError('');
+  const form = useForm<z.infer<typeof formSchema>>({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      email: '',
+      password: '',
+    },
+  });
 
+  const onSubmit = async (values: z.infer<typeof formSchema>) => {
+    setLoading(true);
     try {
       const response = await fetch('/api/auth/login', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(formData),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(values),
       });
 
       const data = await response.json();
 
       if (response.ok) {
+        toast.success('Login successful! Redirecting...');
         // Redirect based on user role
-        switch (data.user.role) {
-          case 'visitor':
-            router.push('/visitor/dashboard');
-            break;
-          case 'approver':
-            router.push('/approver/dashboard');
-            break;
-          case 'admin':
-            router.push('/admin/dashboard');
-            break;
-          default:
-            setError('Invalid user role');
-        }
+        setTimeout(() => {
+          switch (data.user.role) {
+            case 'visitor':
+              window.location.href = '/visitor/dashboard';
+              break;
+            case 'approver':
+              window.location.href = '/approver/dashboard';
+              break;
+            case 'admin':
+              window.location.href = '/admin/dashboard';
+              break;
+            default:
+              toast.error('Invalid user role');
+          }
+        }, 500);
       } else {
-        setError(data.error || 'Login failed');
+        toast.error(data.error || 'Login failed. Please check your credentials.');
       }
     } catch (error) {
-      setError('Network error. Please try again.');
+      toast.error('Network error. Please try again.');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value,
-    });
+  const setTestAccount = (email: string) => {
+    form.setValue('email', email);
+    form.setValue('password', 'password');
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full space-y-8">
-        <div>
-          <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-            Visitor Management System
-          </h2>
-          <p className="mt-2 text-center text-sm text-gray-600">
-            Sign in to your account
+    <div className="min-h-screen flex items-center justify-center bg-neutral-50 dark:bg-neutral-950 p-4">
+      <Toaster position="top-center" richColors />
+      <div className="w-full max-w-[400px] flex flex-col gap-8">
+        <div className="flex flex-col items-center gap-2 text-center">
+          <div className="w-12 h-12 bg-primary rounded-xl flex items-center justify-center text-primary-foreground mb-2 shadow-lg shadow-primary/20">
+            <ClipboardList className="w-6 h-6" />
+          </div>
+          <h1 className="text-2xl font-bold tracking-tight text-neutral-900 dark:text-neutral-100">
+            VisitorPass
+          </h1>
+          <p className="text-neutral-500 dark:text-neutral-400 text-sm max-w-[280px]">
+            The secure and efficient way to manage workplace access.
           </p>
         </div>
-        
-        <div className="mt-8 space-y-6">
-          <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
-            <div className="rounded-md shadow-sm -space-y-px">
-              <div>
-                <label htmlFor="email" className="sr-only">
-                  Email address
-                </label>
-                <input
-                  id="email"
+
+        <Card className="border-neutral-200 dark:border-neutral-800 shadow-sm overflow-hidden bg-white dark:bg-neutral-900">
+          <CardHeader className="pb-4">
+            <CardTitle>Welcome back</CardTitle>
+            <CardDescription>Enter your credentials to access your dashboard.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Form {...form}>
+              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                <FormField
+                  control={form.control}
                   name="email"
-                  type="email"
-                  autoComplete="email"
-                  required
-                  className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-t-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
-                  placeholder="Email address"
-                  value={formData.email}
-                  onChange={handleChange}
+                  render={({ field }: { field: any }) => (
+                    <FormItem>
+                      <FormLabel>Email</FormLabel>
+                      <FormControl>
+                        <div className="relative">
+                          <Mail className="absolute left-3 top-2.5 h-4 w-4 text-neutral-500" />
+                          <Input 
+                            placeholder="name@example.com" 
+                            className="pl-9"
+                            {...field} 
+                          />
+                        </div>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
                 />
-              </div>
-              <div>
-                <label htmlFor="password" className="sr-only">
-                  Password
-                </label>
-                <input
-                  id="password"
+                <FormField
+                  control={form.control}
                   name="password"
-                  type="password"
-                  autoComplete="current-password"
-                  required
-                  className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-b-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
-                  placeholder="Password"
-                  value={formData.password}
-                  onChange={handleChange}
+                  render={({ field }: { field: any }) => (
+                    <FormItem>
+                      <FormLabel>Password</FormLabel>
+                      <FormControl>
+                        <div className="relative">
+                          <KeyRound className="absolute left-3 top-2.5 h-4 w-4 text-neutral-500" />
+                          <Input 
+                            type="password" 
+                            placeholder="••••••••" 
+                            className="pl-9"
+                            {...field} 
+                          />
+                        </div>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
                 />
-              </div>
+                <Button type="submit" className="w-full font-semibold" disabled={loading}>
+                  {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  {loading ? 'Signing in...' : 'Sign in'}
+                </Button>
+              </form>
+            </Form>
+          </CardContent>
+          <CardFooter className="flex flex-col gap-4 border-t border-neutral-100 dark:border-neutral-800 py-6 bg-neutral-50/50 dark:bg-neutral-800/50">
+            <div className="w-full flex items-center gap-2">
+              <Separator className="flex-1" />
+              <span className="text-[10px] text-neutral-400 font-bold uppercase tracking-widest">Demo Accounts</span>
+              <Separator className="flex-1" />
             </div>
-
-            {error && (
-              <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
-                {error}
-              </div>
-            )}
-
-            <div>
-              <button
-                type="submit"
-                disabled={loading}
-                className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50"
-              >
-                {loading ? 'Signing in...' : 'Sign in'}
-              </button>
+            <div className="grid grid-cols-1 gap-2 w-full">
+              {[
+                { label: 'Visitor', email: 'visitor@test.com' },
+                { label: 'Approver', email: 'approver@test.com' },
+                { label: 'Admin', email: 'admin@test.com' }
+              ].map((account) => (
+                <Button
+                  key={account.label}
+                  variant="outline"
+                  size="sm"
+                  className="justify-between group border-neutral-200 hover:border-primary hover:bg-neutral-100 dark:border-neutral-700 dark:hover:bg-neutral-800"
+                  onClick={() => setTestAccount(account.email)}
+                >
+                  <span className="flex items-center gap-2">
+                    <Badge variant="secondary" className="text-[10px] uppercase font-bold px-1.5 py-0">
+                      {account.label}
+                    </Badge>
+                    <span className="text-xs text-neutral-500 group-hover:text-primary transition-colors">
+                      {account.email}
+                    </span>
+                  </span>
+                  <KeyRound className="w-3 h-3 text-neutral-300 group-hover:text-primary" />
+                </Button>
+              ))}
             </div>
-          </form>
+          </CardFooter>
+        </Card>
 
-          <div className="mt-6 border-t border-gray-200 pt-6">
-            <h3 className="text-sm font-medium text-gray-900 mb-3">Test Accounts:</h3>
-            <div className="space-y-2 text-xs text-gray-600">
-              <div><strong>Visitor:</strong> visitor@test.com / password</div>
-              <div><strong>Approver:</strong> approver@test.com / password</div>
-              <div><strong>Admin:</strong> admin@test.com / password</div>
-            </div>
-          </div>
-        </div>
+        <p className="text-center text-xs text-neutral-400">
+          © 2026 VisitorPass. All rights reserved.
+        </p>
       </div>
     </div>
   );
