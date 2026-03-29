@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { verifyToken } from '@/lib/auth';
 
-export function middleware(request: NextRequest) {
+export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // Public routes that don't require authentication
@@ -16,11 +16,11 @@ export function middleware(request: NextRequest) {
   // Get token from cookies
   const token = request.cookies.get('auth-token')?.value;
 
-  console.log(`[MIDDLEWARE] ${pathname} - Token: ${token ? 'Present' : 'Missing'}`);
+  console.log(`[PROXY] ${pathname} - Token: ${token ? 'Present' : 'Missing'}`);
 
   // If no token, redirect to login
   if (!token) {
-    console.log(`[MIDDLEWARE] No token found. Redirecting to login...`);
+    console.log(`[PROXY] No token found. Redirecting to login...`);
     const loginUrl = new URL('/login', request.url);
     return NextResponse.redirect(loginUrl);
   }
@@ -28,26 +28,26 @@ export function middleware(request: NextRequest) {
   // Verify token
   const user = verifyToken(token);
   if (!user) {
-    console.log(`[MIDDLEWARE] Invalid token. Redirecting to login...`);
+    console.log(`[PROXY] Invalid token. Redirecting to login...`);
     const loginUrl = new URL('/login', request.url);
     return NextResponse.redirect(loginUrl);
   }
 
   // Role-based access control
   if (pathname.startsWith('/visitor') && user.role !== 'visitor') {
-    console.log(`[MIDDLEWARE] Role mismatch (visitor). Required: visitor, Got: ${user.role}`);
+    console.log(`[PROXY] Role mismatch (visitor). Required: visitor, Got: ${user.role}`);
     const loginUrl = new URL('/login', request.url);
     return NextResponse.redirect(loginUrl);
   }
 
   if (pathname.startsWith('/approver') && user.role !== 'approver') {
-    console.log(`[MIDDLEWARE] Role mismatch (approver). Required: approver, Got: ${user.role}`);
+    console.log(`[PROXY] Role mismatch (approver). Required: approver, Got: ${user.role}`);
     const loginUrl = new URL('/login', request.url);
     return NextResponse.redirect(loginUrl);
   }
 
   if (pathname.startsWith('/admin') && user.role !== 'admin') {
-    console.log(`[MIDDLEWARE] Role mismatch (admin). Required: admin, Got: ${user.role}`);
+    console.log(`[PROXY] Role mismatch (admin). Required: admin, Got: ${user.role}`);
     const loginUrl = new URL('/login', request.url);
     return NextResponse.redirect(loginUrl);
   }

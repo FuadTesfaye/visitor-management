@@ -128,7 +128,11 @@ export default function VisitorDashboard() {
       case 'pending': 
         return <Badge variant="outline" className="bg-yellow-50 text-yellow-700 border-yellow-200 gap-1 font-semibold capitalize px-2 py-0.5"><Clock className="w-3 h-3" /> {status}</Badge>;
       case 'approved': 
-        return <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 gap-1 font-semibold capitalize px-2 py-0.5"><CheckCircle2 className="w-3 h-3" /> {status}</Badge>;
+        return <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 gap-1 font-semibold capitalize px-2 py-0.5"><CheckCircle2 className="w-3 h-3" /> Ready</Badge>;
+      case 'checked-in': 
+        return <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 gap-1 font-semibold capitalize px-2 py-0.5"><Building2 className="w-3 h-3" /> Checked In</Badge>;
+      case 'checked-out': 
+        return <Badge variant="outline" className="bg-neutral-50 text-neutral-700 border-neutral-200 gap-1 font-semibold capitalize px-2 py-0.5"><CheckCircle2 className="w-3 h-3" /> Visited</Badge>;
       case 'rejected': 
         return <Badge variant="outline" className="bg-red-50 text-red-700 border-red-200 gap-1 font-semibold capitalize px-2 py-0.5"><XCircle className="w-3 h-3" /> {status}</Badge>;
       default: 
@@ -305,10 +309,10 @@ export default function VisitorDashboard() {
                         </TableCell>
                         <TableCell>{getStatusBadge(request.status)}</TableCell>
                         <TableCell className="text-right">
-                          {request.status === 'approved' && request.qrToken ? (
+                          {(request.status === 'approved' || request.status === 'checked-in') && request.qrToken ? (
                             <Button 
                               size="sm" 
-                              variant="secondary" 
+                              variant={request.status === 'checked-in' ? 'outline' : 'secondary'}
                               className="font-bold h-8 group hover:bg-primary hover:text-primary-foreground transition-all"
                               onClick={() => {
                                 setSelectedRequest(request);
@@ -316,7 +320,12 @@ export default function VisitorDashboard() {
                               }}
                             >
                               <QrIcon className="mr-2 h-3.5 w-3.5" />
-                              Get Pass
+                              {request.status === 'checked-in' ? 'Exit Pass' : 'Get Pass'}
+                            </Button>
+                          ) : request.status === 'checked-out' ? (
+                            <Button size="sm" variant="ghost" disabled className="h-8 text-neutral-400">
+                              <CheckCircle2 className="mr-2 h-3.5 w-3.5" />
+                              Visit Complete
                             </Button>
                           ) : request.status === 'rejected' ? (
                             <Dialog>

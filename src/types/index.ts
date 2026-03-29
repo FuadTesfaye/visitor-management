@@ -23,7 +23,7 @@ export interface VisitRequest {
   departmentName: string;
   purpose: string;
   requestedDateTime: Date;
-  status: 'pending' | 'approved' | 'rejected';
+  status: 'pending' | 'approved' | 'rejected' | 'checked-in' | 'checked-out';
   qrToken?: string;
   qrExpiration?: Date;
   approvedBy?: string;

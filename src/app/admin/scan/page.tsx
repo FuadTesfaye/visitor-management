@@ -40,41 +40,61 @@ export default function AdminScanPage() {
   const [scanHistory, setScanHistory] = useState<ScanResult[]>([]);
   const [lastResult, setLastResult] = useState<ScanResult | null>(null);
   const scannerRef = useRef<Html5QrcodeScanner | null>(null);
+  const [hasPermission, setHasPermission] = useState<boolean | null>(null);
 
   useEffect(() => {
-    return () => {
-      if (scannerRef.current) {
-        scannerRef.current.clear().catch(console.error);
-      }
-    };
-  }, []);
+    let scanner: Html5QrcodeScanner | null = null;
 
-  const startScanner = () => {
-    setIsScanning(true);
-    
-    // Cleanup existing scanner if any
-    if (scannerRef.current) {
-      scannerRef.current.clear().then(() => {
-        initializeScanner();
-      }).catch(console.error);
-    } else {
-      initializeScanner();
+    if (isScanning) {
+      // Small timeout to ensure the DOM element with ID 'qr-reader' is rendered
+      const timeoutId = setTimeout(() => {
+        const qrReaderElement = document.getElementById('qr-reader');
+        if (!qrReaderElement) {
+          console.error('[SCANNER] qr-reader element not found even after render');
+          return;
+        }
+
+        scanner = new Html5QrcodeScanner(
+          "qr-reader",
+          { 
+            fps: 10, 
+            qrbox: { width: 250, height: 250 },
+            formatsToSupport: [ Html5QrcodeSupportedFormats.QR_CODE ],
+            rememberLastUsedCamera: true,
+          },
+          /* verbose= */ false
+        );
+
+        scanner.render(onScanSuccess, onScanError);
+        scannerRef.current = scanner;
+        
+        console.log('[SCANNER] Initialized and rendering');
+      }, 100);
+
+      return () => {
+        clearTimeout(timeoutId);
+        if (scannerRef.current) {
+          scannerRef.current.clear().catch(err => {
+            console.warn('[SCANNER] Cleanup error (already cleared?):', err);
+          });
+          scannerRef.current = null;
+        }
+      };
     }
-  };
+  }, [isScanning]);
 
-  const initializeScanner = () => {
-    const scanner = new Html5QrcodeScanner(
-      "qr-reader",
-      { 
-        fps: 10, 
-        qrbox: { width: 250, height: 250 },
-        formatsToSupport: [ Html5QrcodeSupportedFormats.QR_CODE ]
-      },
-      /* verbose= */ false
-    );
-
-    scanner.render(onScanSuccess, onScanError);
-    scannerRef.current = scanner;
+  const startScanner = async () => {
+    try {
+      // Check for camera permission first if possible
+      const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+      stream.getTracks().forEach(track => track.stop());
+      setHasPermission(true);
+      setIsScanning(true);
+    } catch (err) {
+      console.error('[SCANNER] Permission denied or no camera:', err);
+      setHasPermission(false);
+      toast.error('Camera permission denied or camera not found');
+    }
   };
 
   const onScanSuccess = async (decodedText: string) => {
@@ -231,13 +251,20 @@ export default function AdminScanPage() {
                 {lastResult && (
                   <div className={cn(
                     "absolute inset-0 z-10 flex items-center justify-center transition-all duration-300 pointer-events-none",
-                    lastResult.status === 'success' ? "bg-green-500/20" : "bg-red-500/20"
+                    lastResult.status === 'success' 
+                      ? (lastResult.type === 'check-out' ? "bg-blue-500/20" : "bg-green-500/20") 
+                      : "bg-red-500/20"
                   )}>
                     <div className={cn(
-                      "p-8 rounded-full shadow-2xl animate-in zoom-in-95 backdrop-blur-md",
-                      lastResult.status === 'success' ? "bg-green-600 text-white" : "bg-red-600 text-white"
+                      "p-8 rounded-full shadow-2xl animate-in zoom-in-95 backdrop-blur-md flex flex-col items-center gap-2",
+                      lastResult.status === 'success' 
+                        ? (lastResult.type === 'check-out' ? "bg-blue-600 text-white" : "bg-green-600 text-white") 
+                        : "bg-red-600 text-white"
                     )}>
                       {lastResult.status === 'success' ? <CheckCircle2 className="w-16 h-16" /> : <XCircle className="w-16 h-16" />}
+                      <span className="text-xs font-bold uppercase tracking-widest">
+                        {lastResult.status === 'success' ? lastResult.type : 'Error'}
+                      </span>
                     </div>
                   </div>
                 )}

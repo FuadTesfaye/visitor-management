@@ -130,6 +130,8 @@ export default function ApproverDashboard() {
     switch (status) {
       case 'pending': return <Badge variant="outline" className="bg-yellow-50 text-yellow-700 border-yellow-200 gap-1"><Clock className="w-3 h-3" /> {status}</Badge>;
       case 'approved': return <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 gap-1"><CheckCircle2 className="w-3 h-3" /> {status}</Badge>;
+      case 'checked-in': return <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 gap-1"><Building2 className="w-3 h-3" /> Checked In</Badge>;
+      case 'checked-out': return <Badge variant="outline" className="bg-neutral-50 text-neutral-700 border-neutral-200 gap-1"><CheckCircle2 className="w-3 h-3" /> Completed</Badge>;
       case 'rejected': return <Badge variant="outline" className="bg-red-50 text-red-700 border-red-200 gap-1"><XCircle className="w-3 h-3" /> {status}</Badge>;
       default: return <Badge variant="secondary">{status}</Badge>;
     }

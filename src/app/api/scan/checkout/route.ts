@@ -45,8 +45,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Update check-out time
+    // Update check-out time and status
     activeLog.checkOutTime = new Date();
+    visitRequest.status = 'checked-out';
 
     return NextResponse.json({
       message: 'Check-out successful',

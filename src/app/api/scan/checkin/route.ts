@@ -58,6 +58,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Update visit request status
+    visitRequest.status = 'checked-in';
+
     // Create check-in log
     const visitLog = {
       id: uuidv4(),

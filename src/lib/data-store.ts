@@ -1,7 +1,14 @@
 import { User, Department, VisitRequest, VisitLog } from '@/types';
 
-// In-memory data stores
-export let users: User[] = [
+// In-memory data stores with singleton pattern for HMR persistence
+declare global {
+  var __vms_users: User[] | undefined;
+  var __vms_departments: Department[] | undefined;
+  var __vms_visitRequests: VisitRequest[] | undefined;
+  var __vms_visitLogs: VisitLog[] | undefined;
+}
+
+export let users: User[] = globalThis.__vms_users || [
   {
     id: '1',
     email: 'visitor@test.com',
@@ -26,16 +33,23 @@ export let users: User[] = [
   },
 ];
 
-export let departments: Department[] = [
+export let departments: Department[] = globalThis.__vms_departments || [
   { id: '1', name: 'Human Resources' },
   { id: '2', name: 'Finance' },
   { id: '3', name: 'IT Department' },
   { id: '4', name: 'Operations' },
 ];
 
-export let visitRequests: VisitRequest[] = [];
+export let visitRequests: VisitRequest[] = globalThis.__vms_visitRequests || [];
 
-export let visitLogs: VisitLog[] = [];
+export let visitLogs: VisitLog[] = globalThis.__vms_visitLogs || [];
+
+if (process.env.NODE_ENV !== 'production') {
+  globalThis.__vms_users = users;
+  globalThis.__vms_departments = departments;
+  globalThis.__vms_visitRequests = visitRequests;
+  globalThis.__vms_visitLogs = visitLogs;
+}
 
 // Helper functions
 export const findUserByEmail = (email: string): User | undefined => {
