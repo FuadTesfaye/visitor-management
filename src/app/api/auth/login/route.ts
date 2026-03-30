@@ -3,9 +3,21 @@ import { authenticateUser, generateToken } from '@/lib/auth';
 
 export async function POST(request: NextRequest) {
   try {
-    const { email, password } = await request.json();
+    let body;
+    try {
+      body = await request.json();
+    } catch (e) {
+      console.error('[AUTH] Failed to parse login request body:', e);
+      return NextResponse.json(
+        { error: 'Invalid JSON request body' },
+        { status: 400 }
+      );
+    }
+
+    const { email, password } = body;
 
     if (!email || !password) {
+      console.warn('[AUTH] Missing email or password in login request');
       return NextResponse.json(
         { error: 'Email and password are required' },
         { status: 400 }
@@ -14,6 +26,7 @@ export async function POST(request: NextRequest) {
 
     const user = await authenticateUser(email, password);
     if (!user) {
+      console.warn(`[AUTH] Invalid credentials for email: ${email}`);
       return NextResponse.json(
         { error: 'Invalid credentials' },
         { status: 401 }
@@ -44,10 +57,11 @@ export async function POST(request: NextRequest) {
 
     return response;
   } catch (error) {
-    console.error('Login error:', error);
+    console.error('[AUTH] Unexpected login error:', error);
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
     );
   }
 }
+
