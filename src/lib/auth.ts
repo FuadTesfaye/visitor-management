@@ -19,6 +19,7 @@ export const generateToken = (user: User): string => {
     email: user.email,
     name: user.name,
     role: user.role,
+    branchId: user.branchId,
     departmentId: user.departmentId,
   };
   return jwt.sign(payload, JWT_SECRET, { expiresIn: '24h' });
@@ -49,7 +50,7 @@ const mapDecodedToSession = (decoded: any): AuthSession => {
       userId: decoded.sub,
       email: 'admin@example.com',
       name: decoded.name || 'Admin',
-      role: 'admin',
+      role: 'superadmin',
     };
   }
   

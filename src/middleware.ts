@@ -38,19 +38,26 @@ export function middleware(request: NextRequest) {
 
   // Role-based access control
   if (pathname.startsWith('/visitor') && user.role !== 'visitor') {
-    console.log(`[MIDDLEWARE] Role mismatch (visitor). Required: visitor, Got: ${user.role}`);
+    const loginUrl = new URL('/login', request.url);
+    return NextResponse.redirect(loginUrl);
+  }
+  
+  if (pathname.startsWith('/staff') && user.role !== 'staff') {
     const loginUrl = new URL('/login', request.url);
     return NextResponse.redirect(loginUrl);
   }
 
-  if (pathname.startsWith('/approver') && user.role !== 'approver') {
-    console.log(`[MIDDLEWARE] Role mismatch (approver). Required: approver, Got: ${user.role}`);
+  if (pathname.startsWith('/head') && user.role !== 'head') {
     const loginUrl = new URL('/login', request.url);
     return NextResponse.redirect(loginUrl);
   }
 
-  if (pathname.startsWith('/admin') && user.role !== 'admin') {
-    console.log(`[MIDDLEWARE] Role mismatch (admin). Required: admin, Got: ${user.role}`);
+  if (pathname.startsWith('/security') && user.role !== 'security') {
+    const loginUrl = new URL('/login', request.url);
+    return NextResponse.redirect(loginUrl);
+  }
+
+  if (pathname.startsWith('/superadmin') && user.role !== 'superadmin') {
     const loginUrl = new URL('/login', request.url);
     return NextResponse.redirect(loginUrl);
   }
@@ -61,6 +68,9 @@ export function middleware(request: NextRequest) {
   requestHeaders.set('x-user-role', user.role);
   requestHeaders.set('x-user-email', user.email);
   requestHeaders.set('x-user-name', user.name);
+  if (user.branchId) {
+    requestHeaders.set('x-user-branch-id', user.branchId);
+  }
   if (user.departmentId) {
     requestHeaders.set('x-user-department-id', user.departmentId);
   }

@@ -1,4 +1,15 @@
-export type UserRole = 'visitor' | 'approver' | 'admin';
+export type UserRole = 'visitor' | 'staff' | 'head' | 'security' | 'superadmin';
+
+export interface Branch {
+  id: string;
+  name: string;
+}
+
+export interface Department {
+  id: string;
+  name: string;
+  branchId: string;
+}
 
 export interface User {
   id: string;
@@ -6,24 +17,25 @@ export interface User {
   password: string;
   name: string;
   role: UserRole;
+  branchId?: string;
   departmentId?: string;
-}
-
-export interface Department {
-  id: string;
-  name: string;
 }
 
 export interface VisitRequest {
   id: string;
-  visitorId: string;
+  visitorId: string; // The user ID if registered, or generated for walk-in
   visitorName: string;
   faydaNumber: string;
+  phone: string;
+  branchId: string;
   departmentId: string;
   departmentName: string;
   purpose: string;
   requestedDateTime: Date;
   status: 'pending' | 'approved' | 'rejected' | 'checked-in' | 'checked-out';
+  visitType: 'digital' | 'walk-in';
+  visitCode?: string; // Short code for access
+  submittedBy?: string; // staff user ID if created on behalf
   qrToken?: string;
   qrExpiration?: Date;
   approvedBy?: string;
@@ -46,5 +58,6 @@ export interface AuthSession {
   email: string;
   name: string;
   role: UserRole;
+  branchId?: string;
   departmentId?: string;
 }

@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
 import { 
   Plus, 
   Search, 
@@ -32,7 +31,6 @@ import {
 import { 
   Dialog, 
   DialogContent, 
-  DialogDescription, 
   DialogFooter, 
   DialogHeader, 
   DialogTitle,
@@ -45,7 +43,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { VisitRequest, Department, Branch } from '@/types';
 import { useLanguage } from '@/lib/language-context';
 
-export default function VisitorDashboard() {
+export default function StaffDashboard() {
   const [visitRequests, setVisitRequests] = useState<VisitRequest[]>([]);
   const [branches, setBranches] = useState<Branch[]>([]);
   const [departments, setDepartments] = useState<Department[]>([]);
@@ -63,8 +61,8 @@ export default function VisitorDashboard() {
     branchId: '',
     departmentId: '',
     purpose: '',
-    date: '',
-    time: ''
+    date: format(new Date(), 'yyyy-MM-dd'),
+    time: format(new Date(), 'HH:mm')
   });
 
   useEffect(() => {
@@ -132,8 +130,8 @@ export default function VisitorDashboard() {
           branchId: '',
           departmentId: '',
           purpose: '',
-          date: '',
-          time: ''
+          date: format(new Date(), 'yyyy-MM-dd'),
+          time: format(new Date(), 'HH:mm')
         });
         setShowForm(false);
         fetchData();
@@ -172,23 +170,23 @@ export default function VisitorDashboard() {
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
             <h1 className="text-3xl font-bold tracking-tight text-neutral-900 dark:text-neutral-100">
-              {t('myRequests')}
+              Staff Portal
             </h1>
             <p className="text-neutral-500 dark:text-neutral-400">
-              Manage and track your visit requests to Tracon Trading PLC.
+              Submit walk-in visitor requests on behalf of guests.
             </p>
           </div>
 
           <Dialog open={showForm} onOpenChange={setShowForm}>
             <DialogTrigger asChild>
-              <Button className="font-semibold shadow-lg shadow-primary/20">
+              <Button className="font-semibold shadow-lg shadow-primary/20 bg-blue-600 hover:bg-blue-700">
                 <Plus className="mr-2 h-4 w-4" />
-                {t('submitRequest')}
+                Walk-in Request
               </Button>
             </DialogTrigger>
             <DialogContent className="sm:max-w-[500px]">
               <DialogHeader>
-                <DialogTitle>{t('submitRequest')}</DialogTitle>
+                <DialogTitle>{t('submitRequest')} (Walk-in)</DialogTitle>
               </DialogHeader>
               <form onSubmit={handleSubmit} className="space-y-4 pt-4">
                 <div className="grid grid-cols-2 gap-4">
@@ -199,7 +197,7 @@ export default function VisitorDashboard() {
                       required 
                       value={formData.visitorName}
                       onChange={(e) => setFormData({ ...formData, visitorName: e.target.value })}
-                      placeholder="John Doe"
+                      placeholder="Guest Name"
                     />
                   </div>
                   <div className="space-y-2 col-span-1">
@@ -315,10 +313,10 @@ export default function VisitorDashboard() {
                 <div className="w-16 h-16 bg-neutral-100 dark:bg-neutral-800 rounded-full flex items-center justify-center mb-4">
                   <Calendar className="w-8 h-8 text-neutral-400" />
                 </div>
-                <h3 className="text-lg font-semibold text-neutral-900 dark:text-neutral-100">No visits found</h3>
+                <h3 className="text-lg font-semibold text-neutral-900 dark:text-neutral-100">No visits logged</h3>
                 <Button variant="outline" className="mt-6" onClick={() => setShowForm(true)}>
                   <Plus className="mr-2 h-4 w-4" />
-                  {t('submitRequest')}
+                  Log Walk-in Visitor
                 </Button>
               </div>
             ) : (
@@ -326,8 +324,8 @@ export default function VisitorDashboard() {
                 <Table>
                   <TableHeader>
                     <TableRow className="hover:bg-transparent">
+                      <TableHead>Visitor</TableHead>
                       <TableHead className="w-[200px]">{t('department')}</TableHead>
-                      <TableHead>{t('purpose')}</TableHead>
                       <TableHead>{t('date')}</TableHead>
                       <TableHead>{t('status')}</TableHead>
                       <TableHead className="text-right">Action</TableHead>
@@ -337,14 +335,15 @@ export default function VisitorDashboard() {
                     {visitRequests.map((request) => (
                       <TableRow key={request.id}>
                         <TableCell className="font-medium">
+                          {request.visitorName}
+                          <div className="text-xs text-neutral-500">{request.phone}</div>
+                        </TableCell>
+                        <TableCell className="font-medium">
                           <div className="flex flex-col">
                             <span className="flex items-center gap-2">
                               {request.departmentName}
                             </span>
                           </div>
-                        </TableCell>
-                        <TableCell className="max-w-[250px] truncate text-neutral-600 dark:text-neutral-400">
-                          {request.purpose}
                         </TableCell>
                         <TableCell className="text-neutral-600 dark:text-neutral-400">
                           <div className="flex flex-col">

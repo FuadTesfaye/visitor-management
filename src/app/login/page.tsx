@@ -62,11 +62,17 @@ export default function LoginPage() {
             case 'visitor':
               window.location.href = '/visitor/dashboard';
               break;
-            case 'approver':
-              window.location.href = '/approver/dashboard';
+            case 'staff':
+              window.location.href = '/staff/dashboard';
               break;
-            case 'admin':
-              window.location.href = '/admin/dashboard';
+            case 'head':
+              window.location.href = '/head/dashboard';
+              break;
+            case 'security':
+              window.location.href = '/security/dashboard';
+              break;
+            case 'superadmin':
+              window.location.href = '/superadmin/dashboard';
               break;
             default:
               toast.error('Invalid user role');
@@ -89,17 +95,16 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-neutral-50 dark:bg-neutral-950 p-4">
-      <Toaster position="top-center" richColors />
       <div className="w-full max-w-[400px] flex flex-col gap-8">
         <div className="flex flex-col items-center gap-2 text-center">
           <div className="w-12 h-12 bg-primary rounded-xl flex items-center justify-center text-primary-foreground mb-2 shadow-lg shadow-primary/20">
             <ClipboardList className="w-6 h-6" />
           </div>
           <h1 className="text-2xl font-bold tracking-tight text-neutral-900 dark:text-neutral-100">
-            VisitorPass
+            Tracon VMS
           </h1>
           <p className="text-neutral-500 dark:text-neutral-400 text-sm max-w-[280px]">
-            The secure and efficient way to manage workplace access.
+             Welcome to Tracon Trading PLC Visitor Management System.
           </p>
         </div>
 
@@ -168,8 +173,10 @@ export default function LoginPage() {
             <div className="grid grid-cols-1 gap-2 w-full">
               {[
                 { label: 'Visitor', email: 'visitor@test.com' },
-                { label: 'Approver', email: 'approver@test.com' },
-                { label: 'Admin', email: 'admin@test.com' }
+                { label: 'Dept Staff', email: 'staff@test.com' },
+                { label: 'Dept Head', email: 'head@test.com' },
+                { label: 'Security', email: 'security@test.com' },
+                { label: 'Super Admin', email: 'superadmin@test.com' }
               ].map((account) => (
                 <Button
                   key={account.label}
@@ -194,7 +201,7 @@ export default function LoginPage() {
         </Card>
 
         <p className="text-center text-xs text-neutral-400">
-          © 2026 VisitorPass. All rights reserved.
+          © 2026 Tracon VMS. All rights reserved.
         </p>
       </div>
     </div>
