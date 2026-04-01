@@ -114,7 +114,7 @@ The system uses in-memory storage with the following entities:
 
 - Passwords are hashed using bcryptjs
 - JWT tokens stored in HTTP-only cookies
-- Role-based access control via middleware
+- Role-based access control via proxy (Next.js 16)
 - Input validation for Fayda numbers (14 digits)
 - QR tokens expire after 24 hours
 
