@@ -7,7 +7,8 @@ export async function sendSMS(phone: string, text: string) {
       text: text
     }, {
       headers: {
-        'Authorization': `Bearer ${process.env.SMS_API_KEY}`
+        'KEY': process.env.SMS_API_KEY || '',
+        'Content-Type': 'application/json'
       }
     });
 
