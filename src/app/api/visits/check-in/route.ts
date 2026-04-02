@@ -56,7 +56,7 @@ export async function POST(request: NextRequest) {
 
     // Ensure they aren't already checked-in
     const existingLog = await VisitLogModel.findOne({ 
-      visitRequestId: targetRequest._id,
+      visitRequestId: targetRequest._id.toString(),
       checkOutTime: null 
     });
     

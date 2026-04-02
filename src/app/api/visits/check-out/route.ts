@@ -55,7 +55,7 @@ export async function POST(request: NextRequest) {
 
     // Find active log
     const existingLog = await VisitLogModel.findOne({ 
-      visitRequestId: targetRequest._id,
+      visitRequestId: targetRequest._id.toString(),
       checkOutTime: null 
     });
     

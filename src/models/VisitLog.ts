@@ -14,9 +14,10 @@ const VisitLogSchema = new Schema<IVisitLog>({
 
 VisitLogSchema.set('toJSON', {
   transform: (document, returnedObject) => {
-    returnedObject.id = returnedObject._id.toString();
-    delete returnedObject._id;
-    delete returnedObject.__v;
+    const obj = returnedObject as any;
+    obj.id = obj._id.toString();
+    delete obj._id;
+    delete obj.__v;
   }
 });
 
