@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { visitRequests, visitLogs, findVisitRequestByCode, findVisitRequestByFayda } from '@/lib/data-store';
+import dbConnect from '@/lib/db';
+import { VisitRequestModel } from '@/models/VisitRequest';
+import { VisitLogModel } from '@/models/VisitLog';
 
 // Utility to verify session from headers
 const getUserFromHeaders = (request: NextRequest) => {
@@ -12,6 +14,7 @@ const getUserFromHeaders = (request: NextRequest) => {
 
 export async function POST(request: NextRequest) {
   try {
+    await dbConnect();
     const user = getUserFromHeaders(request);
     
     // Only security admin can check out visitors
@@ -21,13 +24,18 @@ export async function POST(request: NextRequest) {
 
     const { visitId, method, identifier } = await request.json();
 
-    let targetRequest = visitRequests.find(v => v.id === visitId);
+    let targetRequest = null;
+
+    if (visitId) {
+      targetRequest = await VisitRequestModel.findById(visitId);
+    }
 
     if (!targetRequest && identifier) {
       if (method === 'code') {
-        targetRequest = findVisitRequestByCode(identifier);
+        targetRequest = await VisitRequestModel.findOne({ visitCode: identifier });
       } else if (method === 'fayda') {
-        targetRequest = findVisitRequestByFayda(identifier);
+        targetRequest = await VisitRequestModel.findOne({ faydaNumber: identifier })
+          .sort({ requestedDateTime: -1 });
       }
     }
 
@@ -46,20 +54,26 @@ export async function POST(request: NextRequest) {
     }
 
     // Find active log
-    const existingLogIndex = visitLogs.findIndex(l => l.visitRequestId === targetRequest.id && !l.checkOutTime);
-    if (existingLogIndex === -1) {
+    const existingLog = await VisitLogModel.findOne({ 
+      visitRequestId: targetRequest._id,
+      checkOutTime: null 
+    });
+    
+    if (!existingLog) {
       return NextResponse.json({ error: 'No active check-in found for this visitor' }, { status: 400 });
     }
 
     // Update log
-    visitLogs[existingLogIndex].checkOutTime = new Date();
+    existingLog.checkOutTime = new Date();
+    await existingLog.save();
     
     // Update status to checked-out
     targetRequest.status = 'checked-out';
+    await targetRequest.save();
 
     return NextResponse.json({ 
       message: 'Visitor successfully checked out',
-      data: visitLogs[existingLogIndex]
+      data: existingLog
     });
     
   } catch (error) {

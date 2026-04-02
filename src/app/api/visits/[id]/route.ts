@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { visitRequests } from '@/lib/data-store';
+import dbConnect from '@/lib/db';
+import { VisitRequestModel } from '@/models/VisitRequest';
 import { generateQRToken } from '@/lib/qr';
-import { VisitRequest } from '@/types';
+import { sendSMS } from '@/lib/sms';
 
 type Params = {
   id: string;
@@ -20,13 +21,14 @@ export async function GET(
   { params }: { params: Promise<Params> }
 ) {
   try {
+    await dbConnect();
     const user = getUserFromHeaders(request);
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const resParams = await params;
-    const requestData = visitRequests.find(r => r.id === resParams.id);
+    const requestData = await VisitRequestModel.findById(resParams.id).lean();
     
     if (!requestData) {
       return NextResponse.json({ error: 'Visit request not found' }, { status: 404 });
@@ -45,6 +47,7 @@ export async function PATCH(
   { params }: { params: Promise<Params> }
 ) {
   try {
+    await dbConnect();
     const user = getUserFromHeaders(request);
     if (!user || user.role !== 'head') { // only head approves/rejects
       return NextResponse.json({ error: 'Unauthorized: Approver role required' }, { status: 403 });
@@ -58,13 +61,11 @@ export async function PATCH(
       return NextResponse.json({ error: 'Invalid status' }, { status: 400 });
     }
 
-    const requestIndex = visitRequests.findIndex(r => r.id === resParams.id);
+    const req = await VisitRequestModel.findById(resParams.id);
     
-    if (requestIndex === -1) {
+    if (!req) {
       return NextResponse.json({ error: 'Visit request not found' }, { status: 404 });
     }
-
-    const req = visitRequests[requestIndex];
 
     // Update status
     if (status === 'approved') {
@@ -73,29 +74,33 @@ export async function PATCH(
       const expiration = new Date(now.getTime() + 24 * 60 * 60 * 1000);
       
       const token = generateQRToken();
+      const visitCode = Math.floor(100000 + Math.random() * 900000).toString();
       
-      visitRequests[requestIndex] = {
-        ...req,
-        status: 'approved',
-        qrToken: token,
-        visitCode: Math.floor(100000 + Math.random() * 900000).toString(), // 6-digit random code
-        qrExpiration: expiration,
-        approvedBy: user.userId,
-        approvedAt: now,
-      };
+      req.status = 'approved';
+      req.qrToken = token;
+      req.visitCode = visitCode;
+      req.qrExpiration = expiration;
+      req.approvedBy = user.userId;
+      req.approvedAt = now;
+
+      await req.save();
+
+      // Trigger SMS asynchronously
+      const smsText = `Your visit to ${req.departmentName} has been approved. Your access code is ${visitCode}. Please present this code to security.`;
+      sendSMS(req.phone, smsText).catch(console.error);
+
     } else if (status === 'rejected') {
-      visitRequests[requestIndex] = {
-        ...req,
-        status: 'rejected',
-        rejectedBy: user.userId,
-        rejectedAt: new Date(),
-        rejectionReason: rejectionReason || 'No reason provided',
-      };
+      req.status = 'rejected';
+      req.rejectedBy = user.userId;
+      req.rejectedAt = new Date();
+      req.rejectionReason = rejectionReason || 'No reason provided';
+      
+      await req.save();
     }
 
     return NextResponse.json({ 
       message: `Visit request ${status} successfully`,
-      data: visitRequests[requestIndex] 
+      data: req 
     });
     
   } catch (error) {

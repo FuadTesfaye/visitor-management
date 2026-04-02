@@ -1,13 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { departments } from '@/lib/data-store';
+import dbConnect from '@/lib/db';
+import { DepartmentModel } from '@/models/Department';
 
 export async function GET(request: NextRequest) {
-  const branchId = request.nextUrl.searchParams.get('branchId');
-  
-  if (branchId) {
-    const filtered = departments.filter(d => d.branchId === branchId);
-    return NextResponse.json({ departments: filtered });
+  try {
+    await dbConnect();
+    const branchId = request.nextUrl.searchParams.get('branchId');
+    
+    let query = {};
+    if (branchId) {
+      query = { branchId };
+    }
+    
+    const departments = await DepartmentModel.find(query).lean();
+    return NextResponse.json({ departments });
+  } catch (error) {
+    console.error('[API] Error fetching departments:', error);
+    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }
-
-  return NextResponse.json({ departments });
 }

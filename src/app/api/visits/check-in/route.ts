@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { v4 as uuidv4 } from 'uuid';
-import { visitRequests, visitLogs, findVisitRequestByCode, findVisitRequestByFayda } from '@/lib/data-store';
-import { VisitLog } from '@/types';
+import dbConnect from '@/lib/db';
+import { VisitRequestModel } from '@/models/VisitRequest';
+import { VisitLogModel } from '@/models/VisitLog';
 
 // Utility to verify session from headers
 const getUserFromHeaders = (request: NextRequest) => {
@@ -14,6 +14,7 @@ const getUserFromHeaders = (request: NextRequest) => {
 
 export async function POST(request: NextRequest) {
   try {
+    await dbConnect();
     const user = getUserFromHeaders(request);
     
     // Only security admin can check in visitors
@@ -23,13 +24,19 @@ export async function POST(request: NextRequest) {
 
     const { visitId, method, identifier } = await request.json();
 
-    let targetRequest = visitRequests.find(v => v.id === visitId);
+    let targetRequest = null;
+
+    if (visitId) {
+      targetRequest = await VisitRequestModel.findById(visitId);
+    }
 
     if (!targetRequest && identifier) {
       if (method === 'code') {
-        targetRequest = findVisitRequestByCode(identifier);
+        targetRequest = await VisitRequestModel.findOne({ visitCode: identifier });
       } else if (method === 'fayda') {
-        targetRequest = findVisitRequestByFayda(identifier);
+        // Find most recent active one
+        targetRequest = await VisitRequestModel.findOne({ faydaNumber: identifier })
+          .sort({ requestedDateTime: -1 });
       }
     }
 
@@ -48,8 +55,12 @@ export async function POST(request: NextRequest) {
     }
 
     // Ensure they aren't already checked-in
-    const existingLog = visitLogs.find(l => l.visitRequestId === targetRequest.id);
-    if (existingLog && !existingLog.checkOutTime) {
+    const existingLog = await VisitLogModel.findOne({ 
+      visitRequestId: targetRequest._id,
+      checkOutTime: null 
+    });
+    
+    if (existingLog) {
       return NextResponse.json({ error: 'Visitor is already checked in' }, { status: 400 });
     }
 
@@ -59,17 +70,17 @@ export async function POST(request: NextRequest) {
     }
 
     // Create log
-    const log: VisitLog = {
-      id: uuidv4(),
-      visitRequestId: targetRequest.id,
+    const log = new VisitLogModel({
+      visitRequestId: targetRequest._id.toString(),
       checkInTime: new Date(),
       processedBy: user.userId,
-    };
+    });
 
-    visitLogs.push(log);
+    await log.save();
     
     // Update status to checked-in
     targetRequest.status = 'checked-in';
+    await targetRequest.save();
 
     return NextResponse.json({ 
       message: 'Visitor successfully checked in',

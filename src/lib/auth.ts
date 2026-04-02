@@ -1,7 +1,8 @@
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
 import { User, AuthSession } from '@/types';
-import { findUserByEmail } from './data-store';
+import dbConnect from '@/lib/db';
+import { UserModel } from '@/models/User';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'secret';
 
@@ -58,7 +59,8 @@ const mapDecodedToSession = (decoded: any): AuthSession => {
 };
 
 export const authenticateUser = async (email: string, password: string): Promise<User | null> => {
-  const user = findUserByEmail(email);
+  await dbConnect();
+  const user = await UserModel.findOne({ email }).lean();
   if (!user) {
     return null;
   }
@@ -68,5 +70,16 @@ export const authenticateUser = async (email: string, password: string): Promise
     return null;
   }
   
-  return user;
+  // Clean up MongoDB specifics before returning
+  const mappedUser: User = {
+    id: user._id.toString(),
+    email: user.email,
+    password: user.password,
+    name: user.name,
+    role: user.role as any,
+    branchId: user.branchId,
+    departmentId: user.departmentId,
+  };
+  
+  return mappedUser;
 };

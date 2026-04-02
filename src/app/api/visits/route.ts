@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { v4 as uuidv4 } from 'uuid';
-import { visitRequests, departments, visitLogs, users, findBranchById } from '@/lib/data-store';
-import { VisitRequest } from '@/types';
+import dbConnect from '@/lib/db';
+import { VisitRequestModel } from '@/models/VisitRequest';
+import { DepartmentModel } from '@/models/Department';
 
 // Utility to verify session from headers
 const getUserFromHeaders = (request: NextRequest) => {
@@ -16,6 +17,7 @@ const getUserFromHeaders = (request: NextRequest) => {
 
 export async function POST(request: NextRequest) {
   try {
+    await dbConnect();
     const user = getUserFromHeaders(request);
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -42,7 +44,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
 
-    const targetDept = departments.find(d => d.id === departmentId);
+    const targetDept = await DepartmentModel.findById(departmentId).lean();
     if (!targetDept) {
       return NextResponse.json({ error: 'Invalid department' }, { status: 400 });
     }
@@ -53,8 +55,7 @@ export async function POST(request: NextRequest) {
     // Walk-in created by Staff vs Digital created by Visitor
     const isOffline = user.role === 'staff';
 
-    const newRequest: VisitRequest = {
-      id: uuidv4(),
+    const newRequest = new VisitRequestModel({
       visitorId: user.role === 'visitor' ? user.userId : uuidv4(),
       visitorName,
       faydaNumber,
@@ -66,14 +67,14 @@ export async function POST(request: NextRequest) {
       requestedDateTime,
       status: 'pending',
       visitType: isOffline ? 'walk-in' : 'digital',
-      submittedBy: isOffline ? user.userId : undefined,
-    };
+      submittedBy: isOffline ? user.userId : null,
+    });
 
-    visitRequests.push(newRequest);
+    await newRequest.save();
 
     return NextResponse.json({ 
       message: 'Visit request submitted successfully',
-      visitParam: newRequest.id
+      visitParam: newRequest._id.toString()
     }, { status: 201 });
     
   } catch (error) {
@@ -84,47 +85,51 @@ export async function POST(request: NextRequest) {
 
 export async function GET(request: NextRequest) {
   try {
+    await dbConnect();
     const user = getUserFromHeaders(request);
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    let result: VisitRequest[] = [];
+    let query: any = {};
 
     // Filter based on role
     if (user.role === 'visitor') {
-      result = visitRequests.filter(req => req.visitorId === user.userId);
+      query.visitorId = user.userId;
     } 
     else if (user.role === 'staff') {
       // Staff might want to see requests they submitted
-      result = visitRequests.filter(req => req.submittedBy === user.userId);
+      query.submittedBy = user.userId;
     }
     else if (user.role === 'head') {
       // Department head sees all requests for their department
       if (user.departmentId) {
-        result = visitRequests.filter(req => req.departmentId === user.departmentId);
+        query.departmentId = user.departmentId;
       }
     }
     else if (user.role === 'security') {
       // Security sees all APPROVED requests for their branch that are active today
       const today = new Date();
       today.setHours(0, 0, 0, 0);
+      const tomorrow = new Date(today);
+      tomorrow.setDate(tomorrow.getDate() + 1);
       
-      result = visitRequests.filter(req => {
-        const reqDate = new Date(req.requestedDateTime);
-        reqDate.setHours(0, 0, 0, 0);
-        return ['approved', 'checked-in'].includes(req.status) && 
-               req.branchId === user.branchId &&
-               reqDate.getTime() === today.getTime();
-      });
+      query = {
+        status: { $in: ['approved', 'checked-in'] },
+        branchId: user.branchId,
+        requestedDateTime: {
+          $gte: today,
+          $lt: tomorrow
+        }
+      };
     }
     else if (user.role === 'superadmin') {
-      // Super admin sees all
-      result = [...visitRequests];
+      // Super admin sees all, no query filter
     }
 
-    // Sort by most recent first
-    result.sort((a, b) => b.requestedDateTime.getTime() - a.requestedDateTime.getTime());
+    const result = await VisitRequestModel.find(query)
+      .sort({ requestedDateTime: -1 })
+      .lean();
 
     return NextResponse.json({ data: result });
     
