@@ -1,12 +1,16 @@
 
 services:
-  mongodb:
-    image: mongo:latest
+  postgres:
+    image: postgres:15
     container_name: visitor-management-db
     ports:
-      - '27018:27017'
+      - '5432:5432'
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgrespw
+      POSTGRES_DB: visitor_db
     volumes:
-      - mongodb_data:/data/db
+      - postgres_data:/var/lib/postgresql/data
     restart: always
 
   app:
@@ -17,13 +21,14 @@ services:
     ports:
       - '3000:3000'
     environment:
-      - MONGODB_URI=mongodb://mongodb:27017/visitor-management
+      - DATABASE_URL=postgresql://postgres:postgrespw@postgres:5432/visitor_db
+      - DIRECT_URL=postgresql://postgres:postgrespw@postgres:5432/visitor_db
       - SMS_API_KEY=${SMS_API_KEY}
       - NEXTAUTH_SECRET=${NEXTAUTH_SECRET}
       - NEXTAUTH_URL=http://localhost:3000
     depends_on:
-      - mongodb
+      - postgres
     restart: always
 
 volumes:
-  mongodb_data:
+  postgres_data:

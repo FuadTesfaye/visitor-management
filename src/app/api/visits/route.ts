@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { v4 as uuidv4 } from 'uuid';
-import dbConnect from '@/lib/db';
-import { VisitRequestModel } from '@/models/VisitRequest';
-import { DepartmentModel } from '@/models/Department';
+import { prisma } from '@/lib/db';
 
 // Utility to verify session from headers
 const getUserFromHeaders = (request: NextRequest) => {
@@ -17,7 +15,6 @@ const getUserFromHeaders = (request: NextRequest) => {
 
 export async function POST(request: NextRequest) {
   try {
-    await dbConnect();
     const user = getUserFromHeaders(request);
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -44,7 +41,10 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
 
-    const targetDept = await DepartmentModel.findById(departmentId).lean();
+    const targetDept = await prisma.department.findUnique({
+      where: { id: departmentId }
+    });
+    
     if (!targetDept) {
       return NextResponse.json({ error: 'Invalid department' }, { status: 400 });
     }
@@ -55,26 +55,26 @@ export async function POST(request: NextRequest) {
     // Walk-in created by Staff vs Digital created by Visitor
     const isOffline = user.role === 'staff';
 
-    const newRequest = new VisitRequestModel({
-      visitorId: user.role === 'visitor' ? user.userId : uuidv4(),
-      visitorName,
-      faydaNumber,
-      phone,
-      branchId,
-      departmentId,
-      departmentName: targetDept.name,
-      purpose,
-      requestedDateTime,
-      status: 'pending',
-      visitType: isOffline ? 'walk-in' : 'digital',
-      submittedBy: isOffline ? user.userId : null,
+    const newRequest = await prisma.visitRequest.create({
+      data: {
+        visitorId: user.role === 'visitor' ? user.userId : uuidv4(),
+        visitorName,
+        faydaNumber,
+        phone,
+        branchId,
+        departmentId,
+        departmentName: targetDept.name,
+        purpose,
+        requestedDateTime,
+        status: 'pending',
+        visitType: isOffline ? 'walk-in' : 'digital',
+        submittedBy: isOffline ? user.userId : null,
+      }
     });
-
-    await newRequest.save();
 
     return NextResponse.json({ 
       message: 'Visit request submitted successfully',
-      visitParam: newRequest._id.toString()
+      visitParam: newRequest.id
     }, { status: 201 });
     
   } catch (error) {
@@ -85,7 +85,6 @@ export async function POST(request: NextRequest) {
 
 export async function GET(request: NextRequest) {
   try {
-    await dbConnect();
     const user = getUserFromHeaders(request);
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -115,11 +114,11 @@ export async function GET(request: NextRequest) {
       tomorrow.setDate(tomorrow.getDate() + 1);
       
       query = {
-        status: { $in: ['approved', 'checked-in'] },
+        status: { in: ['approved', 'checked-in'] },
         branchId: user.branchId,
         requestedDateTime: {
-          $gte: today,
-          $lt: tomorrow
+          gte: today,
+          lt: tomorrow
         }
       };
     }
@@ -127,9 +126,10 @@ export async function GET(request: NextRequest) {
       // Super admin sees all, no query filter
     }
 
-    const result = await VisitRequestModel.find(query)
-      .sort({ requestedDateTime: -1 })
-      .lean();
+    const result = await prisma.visitRequest.findMany({
+      where: query,
+      orderBy: { requestedDateTime: 'desc' }
+    });
 
     return NextResponse.json({ data: result });
     

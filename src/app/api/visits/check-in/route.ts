@@ -1,7 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import dbConnect from '@/lib/db';
-import { VisitRequestModel } from '@/models/VisitRequest';
-import { VisitLogModel } from '@/models/VisitLog';
+import { prisma } from '@/lib/db';
 
 // Utility to verify session from headers
 const getUserFromHeaders = (request: NextRequest) => {
@@ -14,7 +12,6 @@ const getUserFromHeaders = (request: NextRequest) => {
 
 export async function POST(request: NextRequest) {
   try {
-    await dbConnect();
     const user = getUserFromHeaders(request);
     
     // Only security admin can check in visitors
@@ -27,16 +24,18 @@ export async function POST(request: NextRequest) {
     let targetRequest = null;
 
     if (visitId) {
-      targetRequest = await VisitRequestModel.findById(visitId);
+      targetRequest = await prisma.visitRequest.findUnique({ where: { id: visitId } });
     }
 
     if (!targetRequest && identifier) {
       if (method === 'code') {
-        targetRequest = await VisitRequestModel.findOne({ visitCode: identifier });
+        targetRequest = await prisma.visitRequest.findFirst({ where: { visitCode: identifier } });
       } else if (method === 'fayda') {
         // Find most recent active one
-        targetRequest = await VisitRequestModel.findOne({ faydaNumber: identifier })
-          .sort({ requestedDateTime: -1 });
+        targetRequest = await prisma.visitRequest.findFirst({
+          where: { faydaNumber: identifier },
+          orderBy: { requestedDateTime: 'desc' }
+        });
       }
     }
 
@@ -55,9 +54,11 @@ export async function POST(request: NextRequest) {
     }
 
     // Ensure they aren't already checked-in
-    const existingLog = await VisitLogModel.findOne({ 
-      visitRequestId: targetRequest._id.toString(),
-      checkOutTime: null 
+    const existingLog = await prisma.visitLog.findFirst({
+      where: { 
+        visitRequestId: targetRequest.id,
+        checkOutTime: null 
+      }
     });
     
     if (existingLog) {
@@ -69,18 +70,20 @@ export async function POST(request: NextRequest) {
        return NextResponse.json({ error: 'Visit pass has expired' }, { status: 400 });
     }
 
-    // Create log
-    const log = new VisitLogModel({
-      visitRequestId: targetRequest._id.toString(),
-      checkInTime: new Date(),
-      processedBy: user.userId,
-    });
-
-    await log.save();
-    
-    // Update status to checked-in
-    targetRequest.status = 'checked-in';
-    await targetRequest.save();
+    // Create log & Update status to checked-in using transaction
+    const [log, _updatedRequest] = await prisma.$transaction([
+      prisma.visitLog.create({
+        data: {
+          visitRequestId: targetRequest.id,
+          checkInTime: new Date(),
+          processedBy: user.userId,
+        }
+      }),
+      prisma.visitRequest.update({
+        where: { id: targetRequest.id },
+        data: { status: 'checked-in' }
+      })
+    ]);
 
     return NextResponse.json({ 
       message: 'Visitor successfully checked in',

@@ -1,18 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
-import dbConnect from '@/lib/db';
-import { DepartmentModel } from '@/models/Department';
+import { prisma } from '@/lib/db';
 
 export async function GET(request: NextRequest) {
   try {
-    await dbConnect();
     const branchId = request.nextUrl.searchParams.get('branchId');
     
     let query = {};
     if (branchId) {
-      query = { branchId };
+      query = { where: { branchId } };
     }
     
-    const departments = await DepartmentModel.find(query).lean();
+    const departments = await prisma.department.findMany(query);
     return NextResponse.json({ departments });
   } catch (error) {
     console.error('[API] Error fetching departments:', error);

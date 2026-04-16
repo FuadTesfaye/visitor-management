@@ -1,11 +1,9 @@
 import { NextResponse } from 'next/server';
-import dbConnect from '@/lib/db';
-import { BranchModel } from '@/models/Branch';
+import { prisma } from '@/lib/db';
 
 export async function GET() {
   try {
-    await dbConnect();
-    const branches = await BranchModel.find({}).lean();
+    const branches = await prisma.branch.findMany();
     return NextResponse.json({ branches });
   } catch (error) {
     console.error('[API] Error fetching branches:', error);

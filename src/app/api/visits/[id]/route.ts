@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import dbConnect from '@/lib/db';
-import { VisitRequestModel } from '@/models/VisitRequest';
+import { prisma } from '@/lib/db';
 import { generateQRToken } from '@/lib/qr';
 import { sendSMS } from '@/lib/sms';
 
@@ -21,14 +20,15 @@ export async function GET(
   { params }: { params: Promise<Params> }
 ) {
   try {
-    await dbConnect();
     const user = getUserFromHeaders(request);
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const resParams = await params;
-    const requestData = await VisitRequestModel.findById(resParams.id).lean();
+    const requestData = await prisma.visitRequest.findUnique({
+      where: { id: resParams.id }
+    });
     
     if (!requestData) {
       return NextResponse.json({ error: 'Visit request not found' }, { status: 404 });
@@ -47,7 +47,6 @@ export async function PATCH(
   { params }: { params: Promise<Params> }
 ) {
   try {
-    await dbConnect();
     const user = getUserFromHeaders(request);
     if (!user || user.role !== 'head') { // only head approves/rejects
       return NextResponse.json({ error: 'Unauthorized: Approver role required' }, { status: 403 });
@@ -61,11 +60,13 @@ export async function PATCH(
       return NextResponse.json({ error: 'Invalid status' }, { status: 400 });
     }
 
-    const req = await VisitRequestModel.findById(resParams.id);
+    const req = await prisma.visitRequest.findUnique({ where: { id: resParams.id } });
     
     if (!req) {
       return NextResponse.json({ error: 'Visit request not found' }, { status: 404 });
     }
+
+    let updatedReq;
 
     // Update status
     if (status === 'approved') {
@@ -76,31 +77,37 @@ export async function PATCH(
       const token = generateQRToken();
       const visitCode = Math.floor(100000 + Math.random() * 900000).toString();
       
-      req.status = 'approved';
-      req.qrToken = token;
-      req.visitCode = visitCode;
-      req.qrExpiration = expiration;
-      req.approvedBy = user.userId;
-      req.approvedAt = now;
-
-      await req.save();
+      updatedReq = await prisma.visitRequest.update({
+        where: { id: resParams.id },
+        data: {
+          status: 'approved',
+          qrToken: token,
+          visitCode: visitCode,
+          qrExpiration: expiration,
+          approvedBy: user.userId,
+          approvedAt: now
+        }
+      });
 
       // Trigger SMS asynchronously
       const smsText = `Your visit to ${req.departmentName} has been approved. Your access code is ${visitCode}. Please present this code to security.`;
       sendSMS(req.phone, smsText).catch(console.error);
 
     } else if (status === 'rejected') {
-      req.status = 'rejected';
-      req.rejectedBy = user.userId;
-      req.rejectedAt = new Date();
-      req.rejectionReason = rejectionReason || 'No reason provided';
-      
-      await req.save();
+      updatedReq = await prisma.visitRequest.update({
+        where: { id: resParams.id },
+        data: {
+          status: 'rejected',
+          rejectedBy: user.userId,
+          rejectedAt: new Date(),
+          rejectionReason: rejectionReason || 'No reason provided'
+        }
+      });
     }
 
     return NextResponse.json({ 
       message: `Visit request ${status} successfully`,
-      data: req 
+      data: updatedReq 
     });
     
   } catch (error) {

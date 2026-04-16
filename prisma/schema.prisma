@@ -1,0 +1,70 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  password     String
+  name         String
+  role         String   // 'visitor', 'staff', 'head', 'security', 'superadmin'
+  branchId     String?
+  departmentId String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model Branch {
+  id        String   @id @default(cuid())
+  name      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Department {
+  id        String   @id @default(cuid())
+  name      String
+  branchId  String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model VisitRequest {
+  id                 String    @id @default(cuid())
+  visitorId          String
+  visitorName        String
+  faydaNumber        String
+  phone              String
+  branchId           String
+  departmentId       String
+  departmentName     String
+  purpose            String
+  requestedDateTime  DateTime
+  status             String     @default("pending") // 'pending', 'approved', 'rejected', 'checked-in', 'checked-out'
+  visitType          String     // 'digital', 'walk-in'
+  visitCode          String?
+  submittedBy        String?
+  qrToken            String?
+  qrExpiration       DateTime?
+  approvedBy         String?
+  approvedAt         DateTime?
+  rejectedBy         String?
+  rejectedAt         DateTime?
+  rejectionReason    String?
+  createdAt          DateTime   @default(now())
+  updatedAt          DateTime   @updatedAt
+}
+
+model VisitLog {
+  id             String    @id @default(cuid())
+  visitRequestId String
+  checkInTime    DateTime
+  checkOutTime   DateTime?
+  processedBy    String
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+}

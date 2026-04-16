@@ -1,7 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import dbConnect from '@/lib/db';
-import { VisitRequestModel } from '@/models/VisitRequest';
-import { VisitLogModel } from '@/models/VisitLog';
+import { prisma } from '@/lib/db';
 
 // Utility to verify session from headers
 const getUserFromHeaders = (request: NextRequest) => {
@@ -14,7 +12,6 @@ const getUserFromHeaders = (request: NextRequest) => {
 
 export async function POST(request: NextRequest) {
   try {
-    await dbConnect();
     const user = getUserFromHeaders(request);
     
     // Only security admin can check out visitors
@@ -27,15 +24,17 @@ export async function POST(request: NextRequest) {
     let targetRequest = null;
 
     if (visitId) {
-      targetRequest = await VisitRequestModel.findById(visitId);
+      targetRequest = await prisma.visitRequest.findUnique({ where: { id: visitId } });
     }
 
     if (!targetRequest && identifier) {
       if (method === 'code') {
-        targetRequest = await VisitRequestModel.findOne({ visitCode: identifier });
+        targetRequest = await prisma.visitRequest.findFirst({ where: { visitCode: identifier } });
       } else if (method === 'fayda') {
-        targetRequest = await VisitRequestModel.findOne({ faydaNumber: identifier })
-          .sort({ requestedDateTime: -1 });
+        targetRequest = await prisma.visitRequest.findFirst({
+          where: { faydaNumber: identifier },
+          orderBy: { requestedDateTime: 'desc' }
+        });
       }
     }
 
@@ -54,26 +53,32 @@ export async function POST(request: NextRequest) {
     }
 
     // Find active log
-    const existingLog = await VisitLogModel.findOne({ 
-      visitRequestId: targetRequest._id.toString(),
-      checkOutTime: null 
+    const existingLog = await prisma.visitLog.findFirst({
+      where: { 
+        visitRequestId: targetRequest.id,
+        checkOutTime: null 
+      }
     });
     
     if (!existingLog) {
       return NextResponse.json({ error: 'No active check-in found for this visitor' }, { status: 400 });
     }
 
-    // Update log
-    existingLog.checkOutTime = new Date();
-    await existingLog.save();
-    
-    // Update status to checked-out
-    targetRequest.status = 'checked-out';
-    await targetRequest.save();
+    // Update log & request status
+    const [updatedLog, _updatedRequest] = await prisma.$transaction([
+      prisma.visitLog.update({
+        where: { id: existingLog.id },
+        data: { checkOutTime: new Date() }
+      }),
+      prisma.visitRequest.update({
+        where: { id: targetRequest.id },
+        data: { status: 'checked-out' }
+      })
+    ]);
 
     return NextResponse.json({ 
       message: 'Visitor successfully checked out',
-      data: existingLog
+      data: updatedLog
     });
     
   } catch (error) {
