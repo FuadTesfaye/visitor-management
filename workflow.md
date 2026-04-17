@@ -54,9 +54,9 @@ There are two ways a visit can be initiated.
 > [!IMPORTANT]  
 > The Security personnel can only view requests destined for their specific building (Branch).
 - The visitor arrives at the branch gates and provides the 6-digit code (or Fayda Number) to **Security**.
-- Security inputs the code in their dashboard to query the MongoDB Database.
+- Security inputs the code in their dashboard to query the Supabase Database.
 - The system validates that the visit is (a) Approved, (b) At the correct branch, and (c) Not expired.
-- The Guard clicks **Check In**, updating the status to `checked-in` and writing a `VisitLog` document with a timestamp.
+- The Guard clicks **Check In**, updating the status to `checked-in` and writing a `VisitLog` record with a timestamp.
 
 ### Phase 4: Departure
 - The visitor finishes their business and exits the facility.
@@ -69,5 +69,5 @@ There are two ways a visit can be initiated.
 
 1. **Frontend:** Built with Next.js App Router providing individual dashboard interfaces (e.g., `/staff/dashboard`, `/head/dashboard`, `/security/dashboard`).
 2. **Backend Services:** Standardized Route Handlers (`src/app/api/...`) enforce strict role-based access control checking JWT tokens stored in HTTP-only cookies.
-3. **Database:** Operations read and write to **MongoDB Atlas**, structured using Mongoose schemas.
+3. **Database:** Operations read and write to **Supabase PostgreSQL**, structured using Prisma models.
 4. **Third-party Gateways:** SMS delivery is processed via external API calls (`axios` to `smsethiopia.et`).

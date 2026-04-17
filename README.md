@@ -1,6 +1,6 @@
 # Visitor Management System
 
-A full-stack Visitor Management System built with Next.js (App Router) using in-memory data storage for MVP purposes.
+A full-stack Visitor Management System built with Next.js (App Router) using Prisma and Supabase (PostgreSQL) for persistent data storage.
 
 ## Features
 
@@ -16,7 +16,7 @@ A full-stack Visitor Management System built with Next.js (App Router) using in-
 - **Frontend**: Next.js 14 (App Router), TypeScript, Tailwind CSS
 - **Backend**: Next.js API Routes, Server Actions
 - **Authentication**: JWT tokens with HTTP-only cookies
-- **Storage**: In-memory JavaScript objects/arrays (MVP)
+- **Storage**: Supabase PostgreSQL with Prisma ORM
 - **QR Generation**: qrcode library
 - **Password Hashing**: bcryptjs
 
@@ -101,14 +101,13 @@ src/
 - `GET /api/departments` - Get departments list
 - `GET /api/visitors/active` - Get active visitors (admin only)
 
-## Data Model
+The system uses a Prisma-managed PostgreSQL schema in Supabase with the following models:
 
-The system uses in-memory storage with the following entities:
-
-- **Users**: id, email, password, name, role, departmentId
-- **Departments**: id, name
-- **VisitRequests**: id, visitorId, visitorName, faydaNumber, departmentId, purpose, requestedDateTime, status, qrToken, qrExpiration
-- **VisitLogs**: id, visitRequestId, checkInTime, checkOutTime, processedBy
+- **Users**: id, email, password, name, role, branchId, departmentId, createdAt, updatedAt
+- **Branches**: id, name, createdAt, updatedAt
+- **Departments**: id, name, branchId, createdAt, updatedAt
+- **VisitRequests**: id, visitorId, visitorName, faydaNumber, phone, branchId, departmentId, departmentName, purpose, requestedDateTime, status, visitType, visitCode, submittedBy, qrToken, qrExpiration, approvedBy, approvedAt, rejectedBy, rejectedAt, rejectionReason, createdAt, updatedAt
+- **VisitLogs**: id, visitRequestId, checkInTime, checkOutTime, processedBy, createdAt, updatedAt
 
 ## Security Notes
 
@@ -118,13 +117,12 @@ The system uses in-memory storage with the following entities:
 - Input validation for Fayda numbers (14 digits)
 - QR tokens expire after 24 hours
 
-## Limitations (MVP)
+## Recent Updates
 
-- Data resets on server restart (in-memory storage)
-- No persistent database
-- Basic QR scanning (manual token entry for demo)
-- Simple authentication (no password reset, etc.)
-- No email notifications
+- **Persistent Database**: Migrated from in-memory storage to Supabase PostgreSQL.
+- **Improved Seeding**: Robust seed script for initializing departments, branches, and test users.
+- **Type Safety**: Full Prisma Client integration for better developer experience and reliability.
+
 
 ## Future Enhancements
 
