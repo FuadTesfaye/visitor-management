@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { 
   Building2, 
   CheckCircle2, 
@@ -17,7 +17,9 @@ import {
   Fingerprint,
   User as UserIcon,
   X,
-  ShieldCheck
+  ShieldCheck,
+  Camera,
+  MessageSquare
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { toast, Toaster } from 'sonner';
@@ -38,13 +40,14 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { VisitRequest } from '@/types';
 import { useLanguage } from '@/lib/language-context';
+import QRScanner from '@/components/qr-scanner';
 
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 
-type SearchMethod = 'code' | 'fayda' | 'name' | 'qr';
+type SearchMethod = 'code' | 'fayda' | 'name' | 'otp' | 'qr';
 
 export default function SecurityDashboard() {
   const [requests, setRequests] = useState<VisitRequest[]>([]);
@@ -191,21 +194,38 @@ export default function SecurityDashboard() {
     }
   };
 
+  // When switching method, clear input and last result
+  const handleMethodChange = (method: SearchMethod) => {
+    setSearchMethod(method);
+    setScanInput('');
+    setLastResult(null);
+  };
+
+  const handleQRScan = useCallback((scannedValue: string) => {
+    // Auto check-in when QR is scanned
+    handleAction('/api/visits/check-in', {
+      method: 'qr',
+      identifier: scannedValue
+    });
+  }, []);  // eslint-disable-line react-hooks/exhaustive-deps
+
   const handleManualCheckIn = (e: React.FormEvent) => {
     e.preventDefault();
     if (!scanInput.trim()) return;
     
+    const trimmed = scanInput.trim();
     let method: SearchMethod = searchMethod;
-    // Auto-detect: 14 digits = fayda, VIS- prefix = code
-    if (searchMethod === 'code' && /^\d{14}$/.test(scanInput)) {
-      method = 'fayda';
-    }
+    
+    // Auto-detect by pattern so security doesn't need to switch tabs manually
+    if (/^\d{6}$/.test(trimmed))  method = 'otp';   // 6 digits → SMS OTP
+    if (/^\d{14}$/.test(trimmed)) method = 'fayda'; // 14 digits → Fayda ID
     
     handleAction('/api/visits/check-in', {
       method,
-      identifier: scanInput.trim()
+      identifier: trimmed
     });
   };
+
 
   const handleListAction = (visitId: string, action: 'in' | 'out') => {
     handleAction(`/api/visits/check-${action}`, { visitId });
@@ -360,18 +380,24 @@ export default function SecurityDashboard() {
               <ScanLine className="w-5 h-5 text-blue-600" />
               Visitor Verification
             </CardTitle>
-            <CardDescription>Select search method and enter visitor identifier to check in.</CardDescription>
+            <CardDescription>Select how to identify the visitor, then check them in.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             {/* Method selector */}
-            <div className="grid grid-cols-4 gap-2">
-              {searchMethodConfig.map((method) => {
+            <div className="grid grid-cols-5 gap-2">
+              {[
+                { id: 'code'  as SearchMethod, label: 'Visit Code',   icon: Hash },
+                { id: 'fayda' as SearchMethod, label: 'Fayda ID',     icon: Fingerprint },
+                { id: 'otp'   as SearchMethod, label: 'SMS OTP',      icon: MessageSquare },
+                { id: 'name'  as SearchMethod, label: 'Name Search',  icon: UserIcon },
+                { id: 'qr'    as SearchMethod, label: 'QR Camera',    icon: Camera },
+              ].map((method) => {
                 const Icon = method.icon;
                 return (
                   <button
                     key={method.id}
                     type="button"
-                    onClick={() => { setSearchMethod(method.id); setScanInput(''); setLastResult(null); }}
+                    onClick={() => handleMethodChange(method.id)}
                     className={`flex flex-col items-center gap-1.5 p-3 rounded-lg border-2 transition-all text-center ${
                       searchMethod === method.id 
                         ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300' 
@@ -385,56 +411,112 @@ export default function SecurityDashboard() {
               })}
             </div>
 
-            <form onSubmit={handleManualCheckIn} className="flex gap-2">
-              <div className="relative flex-1">
-                <activeMethod.icon className="absolute left-3 top-3 h-4 w-4 text-neutral-400" />
-                <Input 
-                  placeholder={activeMethod.placeholder}
-                  value={scanInput}
-                  onChange={(e) => { setScanInput(e.target.value); setLastResult(null); }}
-                  className="pl-9 h-10 font-mono tracking-wider"
-                  autoFocus
+            {/* QR Camera mode */}
+            {searchMethod === 'qr' ? (
+              <div className="space-y-3">
+                <QRScanner
+                  onScan={handleQRScan}
+                  onError={(err) => toast.error(`Camera error: ${err}`)}
                 />
-              </div>
-              <Button 
-                type="submit" 
-                className="bg-blue-600 hover:bg-blue-700 px-6"
-                disabled={!scanInput.trim() || processing}
-              >
-                {processing ? <Clock className="h-4 w-4 animate-spin" /> : <UserCheck className="h-4 w-4" />}
-                <span className="ml-2 hidden sm:inline">Check In</span>
-              </Button>
-            </form>
-
-            <p className="text-xs text-neutral-400">{activeMethod.hint}</p>
-
-            {/* Result display */}
-            {lastResult && (
-              <div className={`flex items-start gap-3 p-4 rounded-lg border ${
-                lastResult.success 
-                  ? 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800' 
-                  : 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800'
-              }`}>
-                {lastResult.success 
-                  ? <CheckCircle2 className="w-5 h-5 text-green-600 shrink-0 mt-0.5" />
-                  : <AlertCircle className="w-5 h-5 text-red-600 shrink-0 mt-0.5" />
-                }
-                <div className="flex-1 min-w-0">
-                  <p className={`font-semibold text-sm ${lastResult.success ? 'text-green-800 dark:text-green-200' : 'text-red-800 dark:text-red-200'}`}>
-                    {lastResult.message}
-                  </p>
-                  {lastResult.success && lastResult.visitor && (
-                    <div className="mt-2 space-y-0.5 text-xs text-green-700 dark:text-green-300">
-                      <p><strong>Department:</strong> {lastResult.visitor.department}</p>
-                      <p><strong>Purpose:</strong> {lastResult.visitor.purpose}</p>
-                      {lastResult.visitor.visitCode && <p><strong>Code:</strong> {lastResult.visitor.visitCode}</p>}
+                {/* Result display inside camera mode */}
+                {lastResult && (
+                  <div className={`flex items-start gap-3 p-4 rounded-lg border ${
+                    lastResult.success 
+                      ? 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800' 
+                      : 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800'
+                  }`}>
+                    {lastResult.success 
+                      ? <CheckCircle2 className="w-5 h-5 text-green-600 shrink-0 mt-0.5" />
+                      : <AlertCircle className="w-5 h-5 text-red-600 shrink-0 mt-0.5" />
+                    }
+                    <div className="flex-1 min-w-0">
+                      <p className={`font-semibold text-sm ${lastResult.success ? 'text-green-800 dark:text-green-200' : 'text-red-800 dark:text-red-200'}`}>
+                        {lastResult.message}
+                      </p>
+                      {lastResult.success && lastResult.visitor && (
+                        <div className="mt-2 space-y-0.5 text-xs text-green-700 dark:text-green-300">
+                          <p><strong>Visitor:</strong> {lastResult.visitor.name}</p>
+                          <p><strong>Department:</strong> {lastResult.visitor.department}</p>
+                          <p><strong>Purpose:</strong> {lastResult.visitor.purpose}</p>
+                        </div>
+                      )}
                     </div>
-                  )}
-                </div>
-                <button onClick={() => setLastResult(null)} className="text-neutral-400 hover:text-neutral-600">
-                  <X className="w-4 h-4" />
-                </button>
+                    <button onClick={() => setLastResult(null)} className="text-neutral-400 hover:text-neutral-600">
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                )}
               </div>
+            ) : (
+              /* Manual text input for code / fayda / otp / name */
+              <>
+                <form onSubmit={handleManualCheckIn} className="flex gap-2">
+                  <div className="relative flex-1">
+                    {searchMethod === 'code'  && <Hash        className="absolute left-3 top-3 h-4 w-4 text-neutral-400" />}
+                    {searchMethod === 'fayda' && <Fingerprint className="absolute left-3 top-3 h-4 w-4 text-neutral-400" />}
+                    {searchMethod === 'otp'   && <MessageSquare className="absolute left-3 top-3 h-4 w-4 text-neutral-400" />}
+                    {searchMethod === 'name'  && <UserIcon    className="absolute left-3 top-3 h-4 w-4 text-neutral-400" />}
+                    <Input 
+                      placeholder={
+                        searchMethod === 'code'  ? 'VIS-1234' :
+                        searchMethod === 'fayda' ? '14-digit Fayda number' :
+                        searchMethod === 'otp'   ? '6-digit SMS code' :
+                        'Search visitor name'
+                      }
+                      value={scanInput}
+                      onChange={(e) => { setScanInput(e.target.value); setLastResult(null); }}
+                      className={`pl-9 h-10 tracking-widest font-mono ${searchMethod === 'otp' ? 'text-lg font-black' : ''}`}
+                      inputMode={searchMethod === 'otp' || searchMethod === 'fayda' ? 'numeric' : 'text'}
+                      maxLength={searchMethod === 'otp' ? 6 : undefined}
+                      autoFocus
+                    />
+                  </div>
+                  <Button 
+                    type="submit" 
+                    className="bg-blue-600 hover:bg-blue-700 px-6"
+                    disabled={!scanInput.trim() || processing}
+                  >
+                    {processing ? <Clock className="h-4 w-4 animate-spin" /> : <UserCheck className="h-4 w-4" />}
+                    <span className="ml-2 hidden sm:inline">Check In</span>
+                  </Button>
+                </form>
+
+                <p className="text-xs text-neutral-400">
+                  {searchMethod === 'code'  ? 'Enter the visit code (e.g., VIS-4821)' :
+                   searchMethod === 'fayda' ? 'Enter 14-digit national ID number' :
+                   searchMethod === 'otp'   ? 'Enter the 6-digit code from the approval SMS' :
+                   "Type part of the visitor's name to find them"}
+                </p>
+
+                {/* Result display */}
+                {lastResult && (
+                  <div className={`flex items-start gap-3 p-4 rounded-lg border ${
+                    lastResult.success 
+                      ? 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800' 
+                      : 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800'
+                  }`}>
+                    {lastResult.success 
+                      ? <CheckCircle2 className="w-5 h-5 text-green-600 shrink-0 mt-0.5" />
+                      : <AlertCircle className="w-5 h-5 text-red-600 shrink-0 mt-0.5" />
+                    }
+                    <div className="flex-1 min-w-0">
+                      <p className={`font-semibold text-sm ${lastResult.success ? 'text-green-800 dark:text-green-200' : 'text-red-800 dark:text-red-200'}`}>
+                        {lastResult.message}
+                      </p>
+                      {lastResult.success && lastResult.visitor && (
+                        <div className="mt-2 space-y-0.5 text-xs text-green-700 dark:text-green-300">
+                          <p><strong>Department:</strong> {lastResult.visitor.department}</p>
+                          <p><strong>Purpose:</strong> {lastResult.visitor.purpose}</p>
+                          {lastResult.visitor.visitCode && <p><strong>Code:</strong> {lastResult.visitor.visitCode}</p>}
+                        </div>
+                      )}
+                    </div>
+                    <button onClick={() => setLastResult(null)} className="text-neutral-400 hover:text-neutral-600">
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                )}
+              </>
             )}
           </CardContent>
         </Card>

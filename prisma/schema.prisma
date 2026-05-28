@@ -51,6 +51,7 @@ model VisitRequest {
   visitType          String     // 'digital', 'walk-in'
   walkIn             Boolean    @default(false)
   visitCode          String?
+  smsOtp             String?
   submittedBy        String?
   qrToken            String?
   qrExpiration       DateTime?

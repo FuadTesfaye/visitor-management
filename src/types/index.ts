@@ -39,6 +39,7 @@ export interface VisitRequest {
   visitType: 'digital' | 'walk-in';
   walkIn?: boolean;
   visitCode?: string;
+  smsOtp?: string;
   submittedBy?: string;
   qrToken?: string;
   qrExpiration?: Date;

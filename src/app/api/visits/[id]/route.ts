@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { generateQRToken } from '@/lib/qr';
-import { sendSMS } from '@/lib/sms';
+import { sendSMS, generateOTP } from '@/lib/sms';
 
 type Params = {
   id: string;
@@ -86,20 +86,28 @@ export async function PATCH(
       const token = generateQRToken();
       const visitCode = generateVisitCode();
       
+      const otp = generateOTP(); // 6-digit numeric OTP for feature phones
+
       updatedReq = await prisma.visitRequest.update({
         where: { id: resParams.id },
         data: {
           status: 'approved',
           qrToken: token,
           visitCode: visitCode,
+          smsOtp: otp,
           qrExpiration: expiration,
           approvedBy: user.userId,
           approvedAt: now
         }
       });
 
-      // Trigger SMS asynchronously
-      const smsText = `Your visit to ${req.departmentName} has been approved. Your access code is ${visitCode}. Please present this code or your Fayda ID to security upon arrival.`;
+      // Send SMS asynchronously — don't block the response
+      const smsText =
+        `TRACON VISIT APPROVED\n` +
+        `Dept: ${req.departmentName}\n` +
+        `OTP: ${otp}\n` +
+        `Code: ${visitCode}\n` +
+        `Show OTP or code to security.`;
       sendSMS(req.phone, smsText).catch(console.error);
 
     } else if (status === 'rejected') {

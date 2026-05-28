@@ -53,6 +53,15 @@ export async function POST(request: NextRequest) {
         targetRequest = await prisma.visitRequest.findFirst({
           where: { qrToken: identifier }
         });
+      } else if (method === 'otp') {
+        // 6-digit SMS OTP — find the most recent approved visit with this OTP
+        targetRequest = await prisma.visitRequest.findFirst({
+          where: {
+            smsOtp: identifier.trim(),
+            status: 'approved'
+          },
+          orderBy: { requestedDateTime: 'desc' }
+        });
       } else if (method === 'name') {
         // Name search — find by visitor name (most recent approved)
         targetRequest = await prisma.visitRequest.findFirst({
