@@ -1,12 +1,8 @@
 import bcrypt from 'bcryptjs';
-import path from 'path';
 import { PrismaClient } from '@prisma/client';
-import Database from 'better-sqlite3';
-import { PrismaLibSQL } from '@prisma/adapter-better-sqlite3';
+import { PrismaBetterSqlite3 } from '@prisma/adapter-better-sqlite3';
 
-const dbPath = path.resolve(process.cwd(), 'prisma/dev.db');
-const db = new Database(dbPath);
-const adapter = new PrismaLibSQL(db);
+const adapter = new PrismaBetterSqlite3({ url: 'file:./prisma/dev.db' });
 const prisma = new PrismaClient({ adapter });
 
 async function seed() {
@@ -37,10 +33,9 @@ async function seed() {
     const dept6 = await prisma.department.create({ data: { name: 'FMCG', branchId: branch3.id } });
     const dept7 = await prisma.department.create({ data: { name: 'Aluminum', branchId: branch4.id } });
     console.log('✓ Departments seeded');
-    // suppress unused vars warnings
     void dept2; void dept3; void dept4; void dept5; void dept6; void dept7;
 
-    // Users (password: "password")
+    // Users (all passwords: "password")
     const defaultPassword = await bcrypt.hash('password', 10);
 
     await prisma.user.createMany({
@@ -84,7 +79,7 @@ async function seed() {
     });
     console.log('✓ Users seeded');
     console.log('');
-    console.log('✅ Database seeding completed successfully!');
+    console.log('✅ Database seeding completed!');
     console.log('');
     console.log('Test accounts (password: "password"):');
     console.log('  visitor@test.com    → visitor');
