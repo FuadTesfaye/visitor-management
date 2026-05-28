@@ -15,6 +15,11 @@ const getUserFromHeaders = (request: NextRequest) => {
   return { userId, role };
 };
 
+function generateVisitCode() {
+  const num = Math.floor(1000 + Math.random() * 9000);
+  return `VIS-${num}`;
+}
+
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<Params> }
@@ -66,16 +71,20 @@ export async function PATCH(
       return NextResponse.json({ error: 'Visit request not found' }, { status: 404 });
     }
 
+    if (req.status !== 'pending') {
+      return NextResponse.json({ error: `Request is already ${req.status}` }, { status: 400 });
+    }
+
     let updatedReq;
 
     // Update status
     if (status === 'approved') {
       const now = new Date();
-      // Expiration: 24 hours from approval
-      const expiration = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+      // Expiration: 48 hours from approval
+      const expiration = new Date(now.getTime() + 48 * 60 * 60 * 1000);
       
       const token = generateQRToken();
-      const visitCode = Math.floor(100000 + Math.random() * 900000).toString();
+      const visitCode = generateVisitCode();
       
       updatedReq = await prisma.visitRequest.update({
         where: { id: resParams.id },
@@ -90,7 +99,7 @@ export async function PATCH(
       });
 
       // Trigger SMS asynchronously
-      const smsText = `Your visit to ${req.departmentName} has been approved. Your access code is ${visitCode}. Please present this code to security.`;
+      const smsText = `Your visit to ${req.departmentName} has been approved. Your access code is ${visitCode}. Please present this code or your Fayda ID to security upon arrival.`;
       sendSMS(req.phone, smsText).catch(console.error);
 
     } else if (status === 'rejected') {

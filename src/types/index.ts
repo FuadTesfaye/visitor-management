@@ -19,23 +19,27 @@ export interface User {
   role: UserRole;
   branchId?: string;
   departmentId?: string;
+  createdAt?: Date;
 }
 
 export interface VisitRequest {
   id: string;
-  visitorId: string; // The user ID if registered, or generated for walk-in
+  visitorId: string;
   visitorName: string;
   faydaNumber: string;
   phone: string;
   branchId: string;
+  branchName: string;
   departmentId: string;
   departmentName: string;
+  personToMeet?: string;
   purpose: string;
   requestedDateTime: Date;
   status: 'pending' | 'approved' | 'rejected' | 'checked-in' | 'checked-out';
   visitType: 'digital' | 'walk-in';
-  visitCode?: string; // Short code for access
-  submittedBy?: string; // staff user ID if created on behalf
+  walkIn?: boolean;
+  visitCode?: string;
+  submittedBy?: string;
   qrToken?: string;
   qrExpiration?: Date;
   approvedBy?: string;
@@ -43,6 +47,11 @@ export interface VisitRequest {
   rejectedBy?: string;
   rejectedAt?: Date;
   rejectionReason?: string;
+  checkedInAt?: Date;
+  checkedInBy?: string;
+  checkedOutAt?: Date;
+  checkedOutBy?: string;
+  createdAt?: Date;
 }
 
 export interface VisitLog {

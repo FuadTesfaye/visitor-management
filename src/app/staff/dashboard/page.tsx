@@ -60,6 +60,7 @@ export default function StaffDashboard() {
     phone: '',
     branchId: '',
     departmentId: '',
+    personToMeet: '',
     purpose: '',
     date: format(new Date(), 'yyyy-MM-dd'),
     time: format(new Date(), 'HH:mm')
@@ -129,6 +130,7 @@ export default function StaffDashboard() {
           phone: '',
           branchId: '',
           departmentId: '',
+          personToMeet: '',
           purpose: '',
           date: format(new Date(), 'yyyy-MM-dd'),
           time: format(new Date(), 'HH:mm')
@@ -256,6 +258,15 @@ export default function StaffDashboard() {
                         ))}
                       </SelectContent>
                     </Select>
+                  </div>
+                  <div className="space-y-2 col-span-2">
+                    <Label htmlFor="st-personToMeet">Person To Meet <span className="text-neutral-400 font-normal">(optional)</span></Label>
+                    <Input 
+                      id="st-personToMeet" 
+                      value={formData.personToMeet}
+                      onChange={(e) => setFormData({ ...formData, personToMeet: e.target.value })}
+                      placeholder="Name of the person they are visiting"
+                    />
                   </div>
                   <div className="space-y-2 col-span-1">
                     <Label htmlFor="date">{t('date')}</Label>

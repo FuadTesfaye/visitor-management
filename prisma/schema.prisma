@@ -43,10 +43,13 @@ model VisitRequest {
   branchId           String
   departmentId       String
   departmentName     String
+  branchName         String    @default("")
+  personToMeet       String?
   purpose            String
   requestedDateTime  DateTime
   status             String     @default("pending") // 'pending', 'approved', 'rejected', 'checked-in', 'checked-out'
   visitType          String     // 'digital', 'walk-in'
+  walkIn             Boolean    @default(false)
   visitCode          String?
   submittedBy        String?
   qrToken            String?
@@ -56,6 +59,10 @@ model VisitRequest {
   rejectedBy         String?
   rejectedAt         DateTime?
   rejectionReason    String?
+  checkedInAt        DateTime?
+  checkedInBy        String?
+  checkedOutAt       DateTime?
+  checkedOutBy       String?
   createdAt          DateTime   @default(now())
   updatedAt          DateTime   @updatedAt
 }

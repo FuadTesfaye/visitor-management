@@ -13,6 +13,15 @@ const getUserFromHeaders = (request: NextRequest) => {
   return { userId, role, branchId, departmentId };
 };
 
+function generateVisitCode() {
+  const num = Math.floor(1000 + Math.random() * 9000);
+  return `VIS-${num}`;
+}
+
+function generateQRToken() {
+  return `QR-${Date.now()}-${Math.random().toString(36).substring(2, 10).toUpperCase()}`;
+}
+
 export async function POST(request: NextRequest) {
   try {
     const user = getUserFromHeaders(request);
@@ -27,9 +36,11 @@ export async function POST(request: NextRequest) {
       phone,
       branchId,
       departmentId, 
-      purpose, 
+      purpose,
+      personToMeet,
       date,
-      time 
+      time,
+      walkIn
     } = body;
 
     // Validate Fayda Number (exactly 14 digits)
@@ -49,12 +60,72 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid department' }, { status: 400 });
     }
 
+    const targetBranch = await prisma.branch.findUnique({
+      where: { id: branchId }
+    });
+
     // Combine date and time
     const requestedDateTime = new Date(`${date}T${time}`);
 
     // Walk-in created by Staff or Security vs Digital created by Visitor
     const isOffline = user.role === 'staff' || user.role === 'security';
+    const isWalkIn = walkIn === true && user.role === 'security';
 
+    // For immediate walk-in (security registers and immediately checks in)
+    if (isWalkIn) {
+      const visitCode = generateVisitCode();
+      const qrToken = generateQRToken();
+      const now = new Date();
+      const expiration = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+
+      const [newRequest, log] = await prisma.$transaction(async (tx) => {
+        const req = await tx.visitRequest.create({
+          data: {
+            visitorId: uuidv4(),
+            visitorName,
+            faydaNumber,
+            phone,
+            branchId,
+            branchName: targetBranch?.name || '',
+            departmentId,
+            departmentName: targetDept.name,
+            personToMeet: personToMeet || null,
+            purpose,
+            requestedDateTime: now,
+            status: 'checked-in',
+            visitType: 'walk-in',
+            walkIn: true,
+            visitCode,
+            qrToken,
+            qrExpiration: expiration,
+            submittedBy: user.userId,
+            approvedBy: user.userId,
+            approvedAt: now,
+            checkedInAt: now,
+            checkedInBy: user.userId,
+          }
+        });
+
+        const visitLog = await tx.visitLog.create({
+          data: {
+            visitRequestId: req.id,
+            checkInTime: now,
+            processedBy: user.userId,
+          }
+        });
+
+        return [req, visitLog];
+      });
+
+      return NextResponse.json({
+        message: 'Walk-in visitor registered and checked in successfully',
+        visitCode,
+        visitParam: newRequest.id,
+        checkedIn: true,
+      }, { status: 201 });
+    }
+
+    // Normal flow: create pending request
     const newRequest = await prisma.visitRequest.create({
       data: {
         visitorId: user.role === 'visitor' ? user.userId : uuidv4(),
@@ -62,12 +133,15 @@ export async function POST(request: NextRequest) {
         faydaNumber,
         phone,
         branchId,
+        branchName: targetBranch?.name || '',
         departmentId,
         departmentName: targetDept.name,
+        personToMeet: personToMeet || null,
         purpose,
         requestedDateTime,
         status: 'pending',
         visitType: isOffline ? 'walk-in' : 'digital',
+        walkIn: false,
         submittedBy: isOffline ? user.userId : null,
       }
     });
@@ -97,29 +171,23 @@ export async function GET(request: NextRequest) {
       query.visitorId = user.userId;
     } 
     else if (user.role === 'staff') {
-      // Staff might want to see requests they submitted
+      // Staff sees all requests they submitted
       query.submittedBy = user.userId;
     }
     else if (user.role === 'head') {
-      // Department head sees all requests for their department
+      // Department head sees all requests for their department in their branch
       if (user.departmentId) {
         query.departmentId = user.departmentId;
       }
+      if (user.branchId) {
+        query.branchId = user.branchId;
+      }
     }
     else if (user.role === 'security') {
-      // Security sees all APPROVED requests for their branch that are active today
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      const tomorrow = new Date(today);
-      tomorrow.setDate(tomorrow.getDate() + 1);
-      
+      // Security sees approved + checked-in for their branch (no date filter - they need to see all active)
       query = {
         status: { in: ['approved', 'checked-in'] },
         branchId: user.branchId,
-        requestedDateTime: {
-          gte: today,
-          lt: tomorrow
-        }
       };
     }
     else if (user.role === 'superadmin') {

@@ -62,6 +62,7 @@ export default function VisitorDashboard() {
     phone: '',
     branchId: '',
     departmentId: '',
+    personToMeet: '',
     purpose: '',
     date: '',
     time: ''
@@ -131,6 +132,7 @@ export default function VisitorDashboard() {
           phone: '',
           branchId: '',
           departmentId: '',
+          personToMeet: '',
           purpose: '',
           date: '',
           time: ''
@@ -258,6 +260,15 @@ export default function VisitorDashboard() {
                         ))}
                       </SelectContent>
                     </Select>
+                  </div>
+                  <div className="space-y-2 col-span-2">
+                    <Label htmlFor="personToMeet">Person To Meet <span className="text-neutral-400 font-normal">(optional)</span></Label>
+                    <Input 
+                      id="personToMeet" 
+                      value={formData.personToMeet}
+                      onChange={(e) => setFormData({ ...formData, personToMeet: e.target.value })}
+                      placeholder="Name of the person you are visiting"
+                    />
                   </div>
                   <div className="space-y-2 col-span-1">
                     <Label htmlFor="date">{t('date')}</Label>

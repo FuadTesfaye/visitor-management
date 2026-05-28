@@ -5,6 +5,15 @@ import { PrismaBetterSqlite3 } from '@prisma/adapter-better-sqlite3';
 const adapter = new PrismaBetterSqlite3({ url: 'file:./prisma/dev.db' });
 const prisma = new PrismaClient({ adapter });
 
+function generateVisitCode() {
+  const num = Math.floor(1000 + Math.random() * 9000);
+  return `VIS-${num}`;
+}
+
+function generateQRToken() {
+  return `QR-${Date.now()}-${Math.random().toString(36).substring(2, 10).toUpperCase()}`;
+}
+
 async function seed() {
   try {
     console.log('🌱 Seeding local SQLite database...');
@@ -33,23 +42,25 @@ async function seed() {
     const dept6 = await prisma.department.create({ data: { name: 'FMCG', branchId: branch3.id } });
     const dept7 = await prisma.department.create({ data: { name: 'Aluminum', branchId: branch4.id } });
     console.log('✓ Departments seeded');
-    void dept2; void dept3; void dept4; void dept5; void dept6; void dept7;
 
     // Users (all passwords: "password")
     const defaultPassword = await bcrypt.hash('password', 10);
 
+    const visitorUser = await prisma.user.create({
+      data: {
+        email: 'visitor@test.com',
+        password: defaultPassword,
+        name: 'Abebe Kebede',
+        role: 'visitor',
+      }
+    });
+
     await prisma.user.createMany({
       data: [
         {
-          email: 'visitor@test.com',
-          password: defaultPassword,
-          name: 'Test Visitor',
-          role: 'visitor',
-        },
-        {
           email: 'staff@test.com',
           password: defaultPassword,
-          name: 'Test Staff',
+          name: 'Tigist Alemu',
           role: 'staff',
           branchId: branch1.id,
           departmentId: dept1.id,
@@ -57,15 +68,23 @@ async function seed() {
         {
           email: 'head@test.com',
           password: defaultPassword,
-          name: 'Test Head',
+          name: 'Dawit Tadesse',
           role: 'head',
           branchId: branch1.id,
           departmentId: dept1.id,
         },
         {
+          email: 'pharma-head@test.com',
+          password: defaultPassword,
+          name: 'Sara Haile',
+          role: 'head',
+          branchId: branch1.id,
+          departmentId: dept2.id,
+        },
+        {
           email: 'security@test.com',
           password: defaultPassword,
-          name: 'Test Security',
+          name: 'Kebede Worku',
           role: 'security',
           branchId: branch1.id,
         },
@@ -78,15 +97,135 @@ async function seed() {
       ],
     });
     console.log('✓ Users seeded');
+
+    // Sample visit requests so security can test immediately
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    tomorrow.setHours(10, 0, 0, 0);
+
+    const today = new Date();
+    today.setHours(14, 0, 0, 0);
+
+    const qrToken1 = generateQRToken();
+    const visitCode1 = generateVisitCode();
+    const qrToken2 = generateQRToken();
+    const visitCode2 = generateVisitCode();
+
+    const approvedVisit = await prisma.visitRequest.create({
+      data: {
+        visitorId: visitorUser.id,
+        visitorName: 'Abebe Kebede',
+        faydaNumber: '12345678901234',
+        phone: '0912345678',
+        branchId: branch1.id,
+        branchName: 'Head Office (Jemo)',
+        departmentId: dept1.id,
+        departmentName: 'Coffee Export',
+        personToMeet: 'Dawit Tadesse',
+        purpose: 'Supplier meeting for coffee export contract',
+        requestedDateTime: today,
+        status: 'approved',
+        visitType: 'digital',
+        visitCode: visitCode1,
+        qrToken: qrToken1,
+        qrExpiration: new Date(Date.now() + 24 * 60 * 60 * 1000),
+        approvedBy: 'seed',
+        approvedAt: new Date(),
+      }
+    });
+
+    // Pending visit from visitor
+    await prisma.visitRequest.create({
+      data: {
+        visitorId: visitorUser.id,
+        visitorName: 'Abebe Kebede',
+        faydaNumber: '12345678901234',
+        phone: '0912345678',
+        branchId: branch1.id,
+        branchName: 'Head Office (Jemo)',
+        departmentId: dept2.id,
+        departmentName: 'Pharmaceutical',
+        purpose: 'Discuss pharma supply contract',
+        requestedDateTime: tomorrow,
+        status: 'pending',
+        visitType: 'digital',
+      }
+    });
+
+    // Staff-created approved visit
+    await prisma.visitRequest.create({
+      data: {
+        visitorId: 'walk-in-001',
+        visitorName: 'Yohannes Girma',
+        faydaNumber: '98765432109876',
+        phone: '0987654321',
+        branchId: branch1.id,
+        branchName: 'Head Office (Jemo)',
+        departmentId: dept3.id,
+        departmentName: 'HR',
+        personToMeet: 'HR Manager',
+        purpose: 'Job interview follow-up',
+        requestedDateTime: today,
+        status: 'approved',
+        visitType: 'walk-in',
+        visitCode: visitCode2,
+        qrToken: qrToken2,
+        qrExpiration: new Date(Date.now() + 24 * 60 * 60 * 1000),
+        approvedBy: 'seed',
+        approvedAt: new Date(),
+        submittedBy: 'staff-seed',
+      }
+    });
+
+    // Checked-in visitor (currently inside)
+    const checkedInVisit = await prisma.visitRequest.create({
+      data: {
+        visitorId: 'walk-in-002',
+        visitorName: 'Meron Habtamu',
+        faydaNumber: '11223344556677',
+        phone: '0911223344',
+        branchId: branch1.id,
+        branchName: 'Head Office (Jemo)',
+        departmentId: dept4.id,
+        departmentName: 'Finance',
+        purpose: 'Audit review meeting',
+        requestedDateTime: today,
+        status: 'checked-in',
+        visitType: 'walk-in',
+        visitCode: `VIS-${Math.floor(1000 + Math.random() * 9000)}`,
+        qrToken: generateQRToken(),
+        qrExpiration: new Date(Date.now() + 24 * 60 * 60 * 1000),
+        approvedBy: 'seed',
+        approvedAt: new Date(),
+        checkedInAt: new Date(Date.now() - 30 * 60 * 1000),
+        checkedInBy: 'security-seed',
+        walkIn: true,
+      }
+    });
+
+    // Create check-in log for the checked-in visitor
+    await prisma.visitLog.create({
+      data: {
+        visitRequestId: checkedInVisit.id,
+        checkInTime: new Date(Date.now() - 30 * 60 * 1000),
+        processedBy: 'security-seed',
+      }
+    });
+
+    console.log('✓ Sample visits seeded');
     console.log('');
     console.log('✅ Database seeding completed!');
     console.log('');
     console.log('Test accounts (password: "password"):');
-    console.log('  visitor@test.com    → visitor');
-    console.log('  staff@test.com      → staff');
-    console.log('  head@test.com       → department head');
-    console.log('  security@test.com   → security');
-    console.log('  superadmin@test.com → super admin');
+    console.log(`  visitor@test.com       → visitor (Abebe Kebede)`);
+    console.log(`  staff@test.com         → staff`);
+    console.log(`  head@test.com          → Coffee Export dept head`);
+    console.log(`  pharma-head@test.com   → Pharmaceutical dept head`);
+    console.log(`  security@test.com      → security (Head Office Jemo)`);
+    console.log(`  superadmin@test.com    → super admin`);
+    console.log('');
+    console.log('Sample approved visit code: ' + visitCode1);
+    console.log('Sample approved QR token:   ' + qrToken1);
   } catch (error) {
     console.error('❌ Error seeding database:', error);
     process.exit(1);

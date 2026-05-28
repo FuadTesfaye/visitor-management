@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 
-// Utility to verify session from headers
 const getUserFromHeaders = (request: NextRequest) => {
   const userId = request.headers.get('x-user-id');
   const role = request.headers.get('x-user-role');
@@ -14,7 +13,6 @@ export async function POST(request: NextRequest) {
   try {
     const user = getUserFromHeaders(request);
     
-    // Only security admin can check out visitors
     if (!user || user.role !== 'security') {
       return NextResponse.json({ error: 'Unauthorized: Security role required' }, { status: 403 });
     }
@@ -29,12 +27,14 @@ export async function POST(request: NextRequest) {
 
     if (!targetRequest && identifier) {
       if (method === 'code') {
-        targetRequest = await prisma.visitRequest.findFirst({ where: { visitCode: identifier } });
+        targetRequest = await prisma.visitRequest.findFirst({ where: { visitCode: identifier.toUpperCase() } });
       } else if (method === 'fayda') {
         targetRequest = await prisma.visitRequest.findFirst({
-          where: { faydaNumber: identifier },
+          where: { faydaNumber: identifier, status: 'checked-in' },
           orderBy: { requestedDateTime: 'desc' }
         });
+      } else if (method === 'qr') {
+        targetRequest = await prisma.visitRequest.findFirst({ where: { qrToken: identifier } });
       }
     }
 
@@ -42,17 +42,14 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Visit request not found' }, { status: 404 });
     }
 
-    // Security check: Must be for THIS branch
-    if (targetRequest.branchId !== user.branchId) {
-      return NextResponse.json({ error: 'Visitor belongs to another branch' }, { status: 403 });
+    if (user.branchId && targetRequest.branchId !== user.branchId) {
+      return NextResponse.json({ error: 'This visitor is registered for a different branch' }, { status: 403 });
     }
 
-    // Must be checked in
     if (targetRequest.status !== 'checked-in') {
       return NextResponse.json({ error: `Cannot check out visitor with status: ${targetRequest.status}` }, { status: 400 });
     }
 
-    // Find active log
     const existingLog = await prisma.visitLog.findFirst({
       where: { 
         visitRequestId: targetRequest.id,
@@ -64,21 +61,29 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'No active check-in found for this visitor' }, { status: 400 });
     }
 
-    // Update log & request status
-    const [updatedLog, _updatedRequest] = await prisma.$transaction([
+    const now = new Date();
+
+    await prisma.$transaction([
       prisma.visitLog.update({
         where: { id: existingLog.id },
-        data: { checkOutTime: new Date() }
+        data: { checkOutTime: now }
       }),
       prisma.visitRequest.update({
         where: { id: targetRequest.id },
-        data: { status: 'checked-out' }
+        data: { 
+          status: 'checked-out',
+          checkedOutAt: now,
+          checkedOutBy: user.userId,
+        }
       })
     ]);
 
     return NextResponse.json({ 
-      message: 'Visitor successfully checked out',
-      data: updatedLog
+      message: `✓ ${targetRequest.visitorName} checked out successfully`,
+      visitor: {
+        name: targetRequest.visitorName,
+        department: targetRequest.departmentName,
+      }
     });
     
   } catch (error) {
