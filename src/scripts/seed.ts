@@ -89,6 +89,13 @@ async function seed() {
           branchId: branch1.id,
         },
         {
+          email: 'sales-security@test.com',
+          password: defaultPassword,
+          name: 'Security Sales Office',
+          role: 'security',
+          branchId: branch2.id,
+        },
+        {
           email: 'superadmin@test.com',
           password: defaultPassword,
           name: 'Super Admin',
@@ -212,6 +219,41 @@ async function seed() {
       }
     });
 
+    // Walk-in for Fuad Tesfaye Nanani in Sales Office (Tikur Anbessa)
+    const fuadWalkIn = await prisma.visitRequest.create({
+      data: {
+        visitorId: 'fuad-walkin-001',
+        visitorName: 'Fuad Tesfaye Nanani',
+        faydaNumber: '09876544525317',
+        phone: '0924113086',
+        branchId: branch2.id,
+        branchName: 'Sales Office (Tikur Anbessa)',
+        departmentId: dept5.id,
+        departmentName: 'Real Estate',
+        personToMeet: 'Fuad Tesfaye',
+        purpose: 'Brief reason for visit',
+        requestedDateTime: today,
+        status: 'checked-in',
+        visitType: 'walk-in',
+        visitCode: `VIS-${Math.floor(1000 + Math.random() * 9000)}`,
+        qrToken: generateQRToken(),
+        qrExpiration: new Date(Date.now() + 24 * 60 * 60 * 1000),
+        approvedBy: 'seed',
+        approvedAt: new Date(),
+        checkedInAt: new Date(Date.now() - 10 * 60 * 1000),
+        checkedInBy: 'security-seed',
+        walkIn: true,
+      }
+    });
+
+    await prisma.visitLog.create({
+      data: {
+        visitRequestId: fuadWalkIn.id,
+        checkInTime: new Date(Date.now() - 10 * 60 * 1000),
+        processedBy: 'security-seed',
+      }
+    });
+
     console.log('✓ Sample visits seeded');
     console.log('');
     console.log('✅ Database seeding completed!');
@@ -222,6 +264,7 @@ async function seed() {
     console.log(`  head@test.com          → Coffee Export dept head`);
     console.log(`  pharma-head@test.com   → Pharmaceutical dept head`);
     console.log(`  security@test.com      → security (Head Office Jemo)`);
+    console.log(`  sales-security@test.com → security (Sales Office Tikur Anbessa)`);
     console.log(`  superadmin@test.com    → super admin`);
     console.log('');
     console.log('Sample approved visit code: ' + visitCode1);

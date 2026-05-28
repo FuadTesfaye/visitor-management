@@ -285,67 +285,71 @@ export default function SecurityDashboard() {
           {/* Walk-in Registration */}
           <Dialog open={showForm} onOpenChange={setShowForm}>
             <DialogTrigger asChild>
-              <Button className="font-semibold shadow-lg shadow-blue-500/20 bg-blue-600 hover:bg-blue-700 text-white">
-                <Plus className="mr-2 h-4 w-4" />
+              <Button className="font-semibold shadow-lg shadow-blue-500/10 hover:shadow-blue-500/20 bg-blue-600 hover:bg-blue-700 text-white transition-all duration-200 active:scale-95 px-5 h-10.5 rounded-xl gap-2">
+                <Plus className="h-4 w-4" />
                 Walk-in Registration
               </Button>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-[520px]">
-              <DialogHeader>
-                <DialogTitle className="flex items-center gap-2">
-                  <UserCheck className="w-5 h-5 text-blue-600" />
+            <DialogContent className="sm:max-w-[540px] rounded-2xl border border-neutral-100 dark:border-neutral-800 shadow-2xl p-6 bg-white dark:bg-neutral-950">
+              <DialogHeader className="space-y-1.5 pb-2 border-b border-neutral-100 dark:border-neutral-900">
+                <DialogTitle className="flex items-center gap-2 text-xl font-bold tracking-tight text-neutral-900 dark:text-neutral-100">
+                  <UserCheck className="w-5.5 h-5.5 text-blue-600 dark:text-blue-500" />
                   Quick Walk-in Registration
                 </DialogTitle>
-                <p className="text-sm text-neutral-500">Visitor will be immediately checked in upon registration.</p>
+                <p className="text-sm text-neutral-500 dark:text-neutral-400">
+                  Visitor will be immediately checked in upon registration.
+                </p>
               </DialogHeader>
-              <form onSubmit={handleSubmitWalkIn} className="space-y-4 pt-2">
+              <form onSubmit={handleSubmitWalkIn} className="space-y-4 pt-4">
                 <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2 col-span-2">
-                    <Label htmlFor="wk-visitorName">Full Name <span className="text-red-500">*</span></Label>
-                    <Input id="wk-visitorName" required value={formData.visitorName} onChange={(e) => setFormData({ ...formData, visitorName: e.target.value })} placeholder="Visitor's full name" />
+                  <div className="space-y-1.5 col-span-2">
+                    <Label htmlFor="wk-visitorName" className="text-xs font-bold text-neutral-600 dark:text-neutral-300 uppercase tracking-wider">Full Name <span className="text-red-500">*</span></Label>
+                    <Input id="wk-visitorName" required value={formData.visitorName} onChange={(e) => setFormData({ ...formData, visitorName: e.target.value })} placeholder="Visitor's full name" className="h-10 px-3.5 rounded-xl border-neutral-200 dark:border-neutral-800 bg-neutral-50/50 dark:bg-neutral-900/30 focus:bg-white dark:focus:bg-neutral-900 transition-all font-medium" />
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="wk-phone">Phone <span className="text-red-500">*</span></Label>
-                    <Input id="wk-phone" required value={formData.phone} onChange={(e) => setFormData({ ...formData, phone: e.target.value })} placeholder="09xxxxxxxx" />
+                  <div className="space-y-1.5">
+                    <Label htmlFor="wk-phone" className="text-xs font-bold text-neutral-600 dark:text-neutral-300 uppercase tracking-wider">Phone <span className="text-red-500">*</span></Label>
+                    <Input id="wk-phone" required value={formData.phone} onChange={(e) => setFormData({ ...formData, phone: e.target.value })} placeholder="09xxxxxxxx" className="h-10 px-3.5 rounded-xl border-neutral-200 dark:border-neutral-800 bg-neutral-50/50 dark:bg-neutral-900/30 focus:bg-white dark:focus:bg-neutral-900 transition-all font-medium" />
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="wk-faydaNumber">Fayda ID <span className="text-red-500">*</span></Label>
-                    <Input id="wk-faydaNumber" required pattern="\d{14}" maxLength={14} value={formData.faydaNumber} onChange={(e) => setFormData({ ...formData, faydaNumber: e.target.value.replace(/\D/g, '') })} placeholder="14 digits" />
+                  <div className="space-y-1.5">
+                    <Label htmlFor="wk-faydaNumber" className="text-xs font-bold text-neutral-600 dark:text-neutral-300 uppercase tracking-wider">Fayda ID <span className="text-red-500">*</span></Label>
+                    <Input id="wk-faydaNumber" required pattern="\d{14}" maxLength={14} value={formData.faydaNumber} onChange={(e) => setFormData({ ...formData, faydaNumber: e.target.value.replace(/\D/g, '') })} placeholder="14 digits" className="h-10 px-3.5 rounded-xl border-neutral-200 dark:border-neutral-800 bg-neutral-50/50 dark:bg-neutral-900/30 focus:bg-white dark:focus:bg-neutral-900 transition-all font-mono font-medium tracking-widest" />
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="wk-branch">Branch <span className="text-red-500">*</span></Label>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="wk-branch" className="text-xs font-bold text-neutral-600 dark:text-neutral-300 uppercase tracking-wider">Branch <span className="text-red-500">*</span></Label>
                     <Select onValueChange={(value) => setFormData({ ...formData, branchId: value, departmentId: '' })} value={formData.branchId} required>
-                      <SelectTrigger id="wk-branch"><SelectValue placeholder="Select branch" /></SelectTrigger>
-                      <SelectContent>
-                        {branches.map((b) => <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>)}
+                      <SelectTrigger id="wk-branch" className="h-10 px-3.5 rounded-xl border-neutral-200 dark:border-neutral-800 bg-neutral-50/50 dark:bg-neutral-900/30 transition-all font-medium"><SelectValue placeholder="Select branch" /></SelectTrigger>
+                      <SelectContent className="rounded-xl border-neutral-200 dark:border-neutral-800">
+                        {branches.map((b) => <SelectItem key={b.id} value={b.id} className="rounded-lg">{b.name}</SelectItem>)}
                       </SelectContent>
                     </Select>
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="wk-department">Department <span className="text-red-500">*</span></Label>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="wk-department" className="text-xs font-bold text-neutral-600 dark:text-neutral-300 uppercase tracking-wider">Department <span className="text-red-500">*</span></Label>
                     <Select onValueChange={(value) => setFormData({ ...formData, departmentId: value })} value={formData.departmentId} required disabled={!formData.branchId}>
-                      <SelectTrigger id="wk-department"><SelectValue placeholder="Select dept" /></SelectTrigger>
-                      <SelectContent>
-                        {departments.map((dept) => <SelectItem key={dept.id} value={dept.id}>{dept.name}</SelectItem>)}
+                      <SelectTrigger id="wk-department" className="h-10 px-3.5 rounded-xl border-neutral-200 dark:border-neutral-800 bg-neutral-50/50 dark:bg-neutral-900/30 transition-all font-medium"><SelectValue placeholder="Select dept" /></SelectTrigger>
+                      <SelectContent className="rounded-xl border-neutral-200 dark:border-neutral-800">
+                        {departments.map((dept) => <SelectItem key={dept.id} value={dept.id} className="rounded-lg">{dept.name}</SelectItem>)}
                       </SelectContent>
                     </Select>
                   </div>
-                  <div className="space-y-2 col-span-2">
-                    <Label htmlFor="wk-personToMeet">Person To Meet <span className="text-neutral-400 font-normal">(optional)</span></Label>
-                    <Input id="wk-personToMeet" value={formData.personToMeet} onChange={(e) => setFormData({ ...formData, personToMeet: e.target.value })} placeholder="Name of the person they are visiting" />
+                  <div className="space-y-1.5 col-span-2">
+                    <Label htmlFor="wk-personToMeet" className="text-xs font-bold text-neutral-600 dark:text-neutral-300 uppercase tracking-wider">Person To Meet <span className="text-neutral-400 dark:text-neutral-500 font-normal">(optional)</span></Label>
+                    <Input id="wk-personToMeet" value={formData.personToMeet} onChange={(e) => setFormData({ ...formData, personToMeet: e.target.value })} placeholder="Name of the person they are visiting" className="h-10 px-3.5 rounded-xl border-neutral-200 dark:border-neutral-800 bg-neutral-50/50 dark:bg-neutral-900/30 focus:bg-white dark:focus:bg-neutral-900 transition-all font-medium" />
                   </div>
-                  <div className="space-y-2 col-span-2">
-                    <Label htmlFor="wk-purpose">Purpose / Reason <span className="text-red-500">*</span></Label>
-                    <Textarea id="wk-purpose" required className="min-h-[70px]" value={formData.purpose} onChange={(e) => setFormData({ ...formData, purpose: e.target.value })} placeholder="Brief reason for visit" />
+                  <div className="space-y-1.5 col-span-2">
+                    <Label htmlFor="wk-purpose" className="text-xs font-bold text-neutral-600 dark:text-neutral-300 uppercase tracking-wider">Purpose / Reason <span className="text-red-500">*</span></Label>
+                    <Textarea id="wk-purpose" required className="min-h-[80px] p-3.5 rounded-xl border-neutral-200 dark:border-neutral-800 bg-neutral-50/50 dark:bg-neutral-900/30 focus:bg-white dark:focus:bg-neutral-900 transition-all leading-relaxed font-medium" value={formData.purpose} onChange={(e) => setFormData({ ...formData, purpose: e.target.value })} placeholder="Brief reason for visit" />
                   </div>
                 </div>
-                <div className="flex items-center gap-2 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800 rounded-lg">
-                  <ShieldCheck className="w-4 h-4 text-blue-600 shrink-0" />
-                  <p className="text-xs text-blue-700 dark:text-blue-300">This visitor will be <strong>immediately checked in</strong> after registration (verbal approval obtained).</p>
+                <div className="flex items-start gap-2.5 p-3.5 bg-blue-50/50 dark:bg-blue-950/20 border border-blue-100 dark:border-blue-900/50 rounded-xl mt-2">
+                  <ShieldCheck className="w-5 h-5 text-blue-600 dark:text-blue-400 shrink-0 mt-0.5" />
+                  <p className="text-xs text-blue-800 dark:text-blue-300 leading-relaxed font-medium">
+                    This visitor will be <strong>immediately checked in</strong> after registration (verbal approval obtained).
+                  </p>
                 </div>
-                <DialogFooter>
-                  <Button variant="outline" type="button" onClick={() => setShowForm(false)}>Cancel</Button>
-                  <Button type="submit" disabled={submitting} className="bg-blue-600 hover:bg-blue-700">
+                <DialogFooter className="pt-2 border-t border-neutral-100 dark:border-neutral-900 gap-2">
+                  <Button variant="outline" type="button" onClick={() => setShowForm(false)} className="rounded-xl border-neutral-200 dark:border-neutral-800 shadow-none font-semibold">Cancel</Button>
+                  <Button type="submit" disabled={submitting} className="bg-blue-600 hover:bg-blue-700 text-white rounded-xl shadow-md shadow-blue-500/10 font-semibold px-5 transition-all duration-200 active:scale-95">
                     {submitting && <Clock className="mr-2 h-4 w-4 animate-spin" />}
                     Register & Check In
                   </Button>
@@ -384,7 +388,7 @@ export default function SecurityDashboard() {
           </CardHeader>
           <CardContent className="space-y-4">
             {/* Method selector */}
-            <div className="grid grid-cols-5 gap-2">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2.5">
               {[
                 { id: 'code'  as SearchMethod, label: 'Visit Code',   icon: Hash },
                 { id: 'fayda' as SearchMethod, label: 'Fayda ID',     icon: Fingerprint },
@@ -398,14 +402,14 @@ export default function SecurityDashboard() {
                     key={method.id}
                     type="button"
                     onClick={() => handleMethodChange(method.id)}
-                    className={`flex flex-col items-center gap-1.5 p-3 rounded-lg border-2 transition-all text-center ${
+                    className={`flex flex-col items-center gap-2 p-3.5 rounded-xl border-2 transition-all duration-200 text-center active:scale-95 hover:scale-[1.02] ${
                       searchMethod === method.id 
-                        ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300' 
-                        : 'border-neutral-200 dark:border-neutral-700 hover:border-neutral-300 text-neutral-500'
+                        ? 'border-blue-500 bg-blue-50/50 dark:bg-blue-950/20 text-blue-600 dark:text-blue-400 shadow-sm shadow-blue-500/5' 
+                        : 'border-neutral-200 dark:border-neutral-800 hover:border-neutral-300 dark:hover:border-neutral-700 bg-neutral-50/30 dark:bg-neutral-900/30 text-neutral-500 dark:text-neutral-400'
                     }`}
                   >
-                    <Icon className="w-4 h-4" />
-                    <span className="text-[10px] font-semibold leading-tight">{method.label}</span>
+                    <Icon className="w-4.5 h-4.5" />
+                    <span className="text-[10.5px] font-bold tracking-wide leading-tight">{method.label}</span>
                   </button>
                 );
               })}
@@ -413,49 +417,49 @@ export default function SecurityDashboard() {
 
             {/* QR Camera mode */}
             {searchMethod === 'qr' ? (
-              <div className="space-y-3">
+              <div className="space-y-3 pt-2">
                 <QRScanner
                   onScan={handleQRScan}
                   onError={(err) => toast.error(`Camera error: ${err}`)}
                 />
                 {/* Result display inside camera mode */}
                 {lastResult && (
-                  <div className={`flex items-start gap-3 p-4 rounded-lg border ${
+                  <div className={`flex items-start gap-3 p-4 rounded-xl border ${
                     lastResult.success 
-                      ? 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800' 
-                      : 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800'
+                      ? 'bg-green-50/50 dark:bg-green-950/20 border-green-200 dark:border-green-800' 
+                      : 'bg-red-50/50 dark:bg-red-950/20 border-red-200 dark:border-red-800'
                   }`}>
                     {lastResult.success 
-                      ? <CheckCircle2 className="w-5 h-5 text-green-600 shrink-0 mt-0.5" />
-                      : <AlertCircle className="w-5 h-5 text-red-600 shrink-0 mt-0.5" />
+                      ? <CheckCircle2 className="w-5 h-5 text-green-600 dark:text-green-400 shrink-0 mt-0.5" />
+                      : <AlertCircle className="w-5 h-5 text-red-600 dark:text-red-400 shrink-0 mt-0.5" />
                     }
                     <div className="flex-1 min-w-0">
                       <p className={`font-semibold text-sm ${lastResult.success ? 'text-green-800 dark:text-green-200' : 'text-red-800 dark:text-red-200'}`}>
                         {lastResult.message}
                       </p>
                       {lastResult.success && lastResult.visitor && (
-                        <div className="mt-2 space-y-0.5 text-xs text-green-700 dark:text-green-300">
+                        <div className="mt-2.5 space-y-1 text-xs text-green-700 dark:text-green-300 font-medium">
                           <p><strong>Visitor:</strong> {lastResult.visitor.name}</p>
                           <p><strong>Department:</strong> {lastResult.visitor.department}</p>
                           <p><strong>Purpose:</strong> {lastResult.visitor.purpose}</p>
                         </div>
                       )}
                     </div>
-                    <button onClick={() => setLastResult(null)} className="text-neutral-400 hover:text-neutral-600">
-                      <X className="w-4 h-4" />
+                    <button onClick={() => setLastResult(null)} className="text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300 transition-colors">
+                      <X className="w-4.5 h-4.5" />
                     </button>
                   </div>
                 )}
               </div>
             ) : (
               /* Manual text input for code / fayda / otp / name */
-              <>
+              <div className="space-y-3 pt-2">
                 <form onSubmit={handleManualCheckIn} className="flex gap-2">
                   <div className="relative flex-1">
-                    {searchMethod === 'code'  && <Hash        className="absolute left-3 top-3 h-4 w-4 text-neutral-400" />}
-                    {searchMethod === 'fayda' && <Fingerprint className="absolute left-3 top-3 h-4 w-4 text-neutral-400" />}
-                    {searchMethod === 'otp'   && <MessageSquare className="absolute left-3 top-3 h-4 w-4 text-neutral-400" />}
-                    {searchMethod === 'name'  && <UserIcon    className="absolute left-3 top-3 h-4 w-4 text-neutral-400" />}
+                    {searchMethod === 'code'  && <Hash        className="absolute left-3.5 top-3.5 h-4.5 w-4.5 text-neutral-400" />}
+                    {searchMethod === 'fayda' && <Fingerprint className="absolute left-3.5 top-3.5 h-4.5 w-4.5 text-neutral-400" />}
+                    {searchMethod === 'otp'   && <MessageSquare className="absolute left-3.5 top-3.5 h-4.5 w-4.5 text-neutral-400" />}
+                    {searchMethod === 'name'  && <UserIcon    className="absolute left-3.5 top-3.5 h-4.5 w-4.5 text-neutral-400" />}
                     <Input 
                       placeholder={
                         searchMethod === 'code'  ? 'VIS-1234' :
@@ -465,58 +469,64 @@ export default function SecurityDashboard() {
                       }
                       value={scanInput}
                       onChange={(e) => { setScanInput(e.target.value); setLastResult(null); }}
-                      className={`pl-9 h-10 tracking-widest font-mono ${searchMethod === 'otp' ? 'text-lg font-black' : ''}`}
+                      className={`pl-10.5 h-11 rounded-xl border-neutral-200 dark:border-neutral-800 bg-neutral-50/30 focus:bg-white dark:focus:bg-neutral-900 transition-all font-medium ${
+                        searchMethod === 'otp' 
+                          ? 'tracking-[0.5em] text-center font-black text-xl text-blue-600 dark:text-blue-400' 
+                          : searchMethod === 'fayda'
+                          ? 'tracking-[0.1em] font-mono'
+                          : ''
+                      }`}
                       inputMode={searchMethod === 'otp' || searchMethod === 'fayda' ? 'numeric' : 'text'}
-                      maxLength={searchMethod === 'otp' ? 6 : undefined}
+                      maxLength={searchMethod === 'otp' ? 6 : searchMethod === 'fayda' ? 14 : undefined}
                       autoFocus
                     />
                   </div>
                   <Button 
                     type="submit" 
-                    className="bg-blue-600 hover:bg-blue-700 px-6"
+                    className="bg-blue-600 hover:bg-blue-700 text-white rounded-xl px-6 h-11 font-semibold shadow-md shadow-blue-500/10 transition-all duration-200 active:scale-95 gap-2"
                     disabled={!scanInput.trim() || processing}
                   >
                     {processing ? <Clock className="h-4 w-4 animate-spin" /> : <UserCheck className="h-4 w-4" />}
-                    <span className="ml-2 hidden sm:inline">Check In</span>
+                    <span className="hidden sm:inline">Check In</span>
                   </Button>
                 </form>
-
-                <p className="text-xs text-neutral-400">
+ 
+                <p className="text-xs font-semibold text-neutral-400 dark:text-neutral-500">
                   {searchMethod === 'code'  ? 'Enter the visit code (e.g., VIS-4821)' :
                    searchMethod === 'fayda' ? 'Enter 14-digit national ID number' :
                    searchMethod === 'otp'   ? 'Enter the 6-digit code from the approval SMS' :
                    "Type part of the visitor's name to find them"}
                 </p>
-
+ 
                 {/* Result display */}
                 {lastResult && (
-                  <div className={`flex items-start gap-3 p-4 rounded-lg border ${
+                  <div className={`flex items-start gap-3 p-4 rounded-xl border ${
                     lastResult.success 
-                      ? 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800' 
-                      : 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800'
+                      ? 'bg-green-50/50 dark:bg-green-950/20 border-green-200 dark:border-green-800' 
+                      : 'bg-red-50/50 dark:bg-red-950/20 border-red-200 dark:border-red-800'
                   }`}>
                     {lastResult.success 
-                      ? <CheckCircle2 className="w-5 h-5 text-green-600 shrink-0 mt-0.5" />
-                      : <AlertCircle className="w-5 h-5 text-red-600 shrink-0 mt-0.5" />
+                      ? <CheckCircle2 className="w-5 h-5 text-green-600 dark:text-green-400 shrink-0 mt-0.5" />
+                      : <AlertCircle className="w-5 h-5 text-red-600 dark:text-red-400 shrink-0 mt-0.5" />
                     }
                     <div className="flex-1 min-w-0">
                       <p className={`font-semibold text-sm ${lastResult.success ? 'text-green-800 dark:text-green-200' : 'text-red-800 dark:text-red-200'}`}>
                         {lastResult.message}
                       </p>
                       {lastResult.success && lastResult.visitor && (
-                        <div className="mt-2 space-y-0.5 text-xs text-green-700 dark:text-green-300">
+                        <div className="mt-2.5 space-y-1 text-xs text-green-700 dark:text-green-300 font-medium">
                           <p><strong>Department:</strong> {lastResult.visitor.department}</p>
                           <p><strong>Purpose:</strong> {lastResult.visitor.purpose}</p>
                           {lastResult.visitor.visitCode && <p><strong>Code:</strong> {lastResult.visitor.visitCode}</p>}
                         </div>
                       )}
                     </div>
-                    <button onClick={() => setLastResult(null)} className="text-neutral-400 hover:text-neutral-600">
-                      <X className="w-4 h-4" />
+                    <button onClick={() => setLastResult(null)} className="text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300 transition-colors">
+                      <X className="w-4.5 h-4.5" />
                     </button>
                   </div>
                 )}
-              </>
+              </div>
             )}
           </CardContent>
         </Card>
