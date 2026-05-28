@@ -1,26 +1,17 @@
 import bcrypt from 'bcryptjs';
-import dotenv from 'dotenv';
 import path from 'path';
-import { fileURLToPath } from 'url';
-
-// Load environment variables from .env
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-dotenv.config({ path: path.resolve(__dirname, '../../.env.local') });
-
 import { PrismaClient } from '@prisma/client';
-import { Pool } from 'pg';
-import { PrismaPg } from '@prisma/adapter-pg';
+import Database from 'better-sqlite3';
+import { PrismaLibSQL } from '@prisma/adapter-better-sqlite3';
 
-const connectionString = process.env.DATABASE_URL;
-const pool = new Pool({ connectionString });
-const adapter = new PrismaPg(pool);
-
+const dbPath = path.resolve(process.cwd(), 'prisma/dev.db');
+const db = new Database(dbPath);
+const adapter = new PrismaLibSQL(db);
 const prisma = new PrismaClient({ adapter });
 
 async function seed() {
   try {
-    console.log('Connected to Prisma/Postgres');
+    console.log('🌱 Seeding local SQLite database...');
 
     // Clear existing data
     await prisma.visitLog.deleteMany({});
@@ -28,14 +19,14 @@ async function seed() {
     await prisma.user.deleteMany({});
     await prisma.department.deleteMany({});
     await prisma.branch.deleteMany({});
-    console.log('Cleared existing data');
+    console.log('✓ Cleared existing data');
 
     // Branches
     const branch1 = await prisma.branch.create({ data: { name: 'Head Office (Jemo)' } });
     const branch2 = await prisma.branch.create({ data: { name: 'Sales Office (Tikur Anbessa)' } });
     const branch3 = await prisma.branch.create({ data: { name: 'FMCG Shop (Merkato)' } });
     const branch4 = await prisma.branch.create({ data: { name: 'Factory (Dukem)' } });
-    console.log('Branches seeded');
+    console.log('✓ Branches seeded');
 
     // Departments
     const dept1 = await prisma.department.create({ data: { name: 'Coffee Export', branchId: branch1.id } });
@@ -45,9 +36,11 @@ async function seed() {
     const dept5 = await prisma.department.create({ data: { name: 'Real Estate', branchId: branch2.id } });
     const dept6 = await prisma.department.create({ data: { name: 'FMCG', branchId: branch3.id } });
     const dept7 = await prisma.department.create({ data: { name: 'Aluminum', branchId: branch4.id } });
-    console.log('Departments seeded');
+    console.log('✓ Departments seeded');
+    // suppress unused vars warnings
+    void dept2; void dept3; void dept4; void dept5; void dept6; void dept7;
 
-    // Users
+    // Users (password: "password")
     const defaultPassword = await bcrypt.hash('password', 10);
 
     await prisma.user.createMany({
@@ -87,13 +80,21 @@ async function seed() {
           name: 'Super Admin',
           role: 'superadmin',
         },
-      ]
+      ],
     });
-    console.log('Users seeded');
-
-    console.log('Database seeding completed successfully.');
+    console.log('✓ Users seeded');
+    console.log('');
+    console.log('✅ Database seeding completed successfully!');
+    console.log('');
+    console.log('Test accounts (password: "password"):');
+    console.log('  visitor@test.com    → visitor');
+    console.log('  staff@test.com      → staff');
+    console.log('  head@test.com       → department head');
+    console.log('  security@test.com   → security');
+    console.log('  superadmin@test.com → super admin');
   } catch (error) {
-    console.error('Error seeding database:', error);
+    console.error('❌ Error seeding database:', error);
+    process.exit(1);
   } finally {
     await prisma.$disconnect();
   }

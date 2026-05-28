@@ -52,8 +52,8 @@ export async function POST(request: NextRequest) {
     // Combine date and time
     const requestedDateTime = new Date(`${date}T${time}`);
 
-    // Walk-in created by Staff vs Digital created by Visitor
-    const isOffline = user.role === 'staff';
+    // Walk-in created by Staff or Security vs Digital created by Visitor
+    const isOffline = user.role === 'staff' || user.role === 'security';
 
     const newRequest = await prisma.visitRequest.create({
       data: {

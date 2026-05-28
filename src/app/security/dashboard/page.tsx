@@ -10,7 +10,9 @@ import {
   UserCheck,
   UserCheck2,
   LogOut,
-  AlertCircle
+  AlertCircle,
+  Plus,
+  QrCode
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { toast, Toaster } from 'sonner';
@@ -32,6 +34,11 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { VisitRequest } from '@/types';
 import { useLanguage } from '@/lib/language-context';
 
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
+
 export default function SecurityDashboard() {
   const [requests, setRequests] = useState<VisitRequest[]>([]);
   const [loading, setLoading] = useState(true);
@@ -39,10 +46,89 @@ export default function SecurityDashboard() {
   const [scanInput, setScanInput] = useState('');
   const [processing, setProcessing] = useState(false);
   const { t } = useLanguage();
+  
+  const [branches, setBranches] = useState<any[]>([]);
+  const [departments, setDepartments] = useState<any[]>([]);
+  const [showForm, setShowForm] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [formData, setFormData] = useState({
+    visitorName: '',
+    faydaNumber: '',
+    phone: '',
+    branchId: '',
+    departmentId: '',
+    purpose: '',
+    date: format(new Date(), 'yyyy-MM-dd'),
+    time: format(new Date(), 'HH:mm')
+  });
 
   useEffect(() => {
     fetchRequests();
+    fetchBranches();
   }, []);
+
+  useEffect(() => {
+    if (formData.branchId) {
+      fetchDepartments(formData.branchId);
+    } else {
+      setDepartments([]);
+    }
+  }, [formData.branchId]);
+
+  const fetchBranches = async () => {
+    try {
+      const res = await fetch('/api/branches');
+      if (res.ok) {
+        const data = await res.json();
+        setBranches(data.branches);
+      }
+    } catch (e) {}
+  };
+
+  const fetchDepartments = async (bId: string) => {
+    try {
+      const res = await fetch(`/api/departments?branchId=${bId}`);
+      if (res.ok) {
+        const data = await res.json();
+        setDepartments(data.departments);
+      }
+    } catch (e) {}
+  };
+
+  const handleSubmitWalkIn = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSubmitting(true);
+    try {
+      const response = await fetch('/api/visits', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData),
+      });
+
+      if (response.ok) {
+        toast.success('Walk-in request created. Pending approval.');
+        setFormData({
+          visitorName: '',
+          faydaNumber: '',
+          phone: '',
+          branchId: '',
+          departmentId: '',
+          purpose: '',
+          date: format(new Date(), 'yyyy-MM-dd'),
+          time: format(new Date(), 'HH:mm')
+        });
+        setShowForm(false);
+        fetchRequests();
+      } else {
+        const data = await response.json();
+        toast.error(data.error || 'Failed to submit request');
+      }
+    } catch (error) {
+      toast.error('Network error. Please try again.');
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   const fetchRequests = async () => {
     setLoading(true);
@@ -142,6 +228,64 @@ export default function SecurityDashboard() {
               Manage visitor check-ins and check-outs for your branch.
             </p>
           </div>
+          <Dialog open={showForm} onOpenChange={setShowForm}>
+            <DialogTrigger asChild>
+              <Button className="font-semibold shadow-lg shadow-primary/20 bg-blue-600 hover:bg-blue-700">
+                <Plus className="mr-2 h-4 w-4" />
+                Quick Registration
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-[500px]">
+              <DialogHeader>
+                <DialogTitle>Quick Walk-in Registration</DialogTitle>
+              </DialogHeader>
+              <form onSubmit={handleSubmitWalkIn} className="space-y-4 pt-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2 col-span-2">
+                    <Label htmlFor="visitorName">Name</Label>
+                    <Input id="visitorName" required value={formData.visitorName} onChange={(e) => setFormData({ ...formData, visitorName: e.target.value })} placeholder="Guest Name" />
+                  </div>
+                  <div className="space-y-2 col-span-1">
+                    <Label htmlFor="phone">Phone</Label>
+                    <Input id="phone" required value={formData.phone} onChange={(e) => setFormData({ ...formData, phone: e.target.value })} placeholder="09..." />
+                  </div>
+                  <div className="space-y-2 col-span-1">
+                    <Label htmlFor="faydaNumber">Fayda ID</Label>
+                    <Input id="faydaNumber" required pattern="\\d{14}" maxLength={14} value={formData.faydaNumber} onChange={(e) => setFormData({ ...formData, faydaNumber: e.target.value.replace(/\\D/g, '') })} placeholder="14 Digits" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="branch">Branch</Label>
+                    <Select onValueChange={(value) => setFormData({ ...formData, branchId: value })} value={formData.branchId} required>
+                      <SelectTrigger id="branch"><SelectValue placeholder="..." /></SelectTrigger>
+                      <SelectContent>
+                        {branches.map((b) => <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="department">Department</Label>
+                    <Select onValueChange={(value) => setFormData({ ...formData, departmentId: value })} value={formData.departmentId} required disabled={!formData.branchId}>
+                      <SelectTrigger id="department"><SelectValue placeholder="..." /></SelectTrigger>
+                      <SelectContent>
+                        {departments.map((dept) => <SelectItem key={dept.id} value={dept.id}>{dept.name}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2 col-span-2">
+                    <Label htmlFor="purpose">Reason</Label>
+                    <Textarea id="purpose" required className="min-h-[80px]" value={formData.purpose} onChange={(e) => setFormData({ ...formData, purpose: e.target.value })} />
+                  </div>
+                </div>
+                <DialogFooter className="pt-4">
+                  <Button variant="outline" type="button" onClick={() => setShowForm(false)}>Cancel</Button>
+                  <Button type="submit" disabled={submitting}>
+                    {submitting && <Clock className="mr-2 h-4 w-4 animate-spin" />}
+                    Register Walk-in
+                  </Button>
+                </DialogFooter>
+              </form>
+            </DialogContent>
+          </Dialog>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
