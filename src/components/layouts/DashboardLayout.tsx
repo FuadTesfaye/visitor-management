@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
+import Image from 'next/image';
 import { 
   LayoutDashboard, 
   QrCode, 
@@ -15,7 +16,22 @@ import {
   ShieldCheck,
   ClipboardList,
   Building2,
-  Settings
+  Settings,
+  FileText,
+  Calendar,
+  Clock,
+  UserPlus,
+  CheckCircle2,
+  History,
+  FileBarChart,
+  ScanLine,
+  UserCheck,
+  AlertTriangle,
+  ScrollText,
+  Network,
+  Activity,
+  LineChart,
+  CalendarClock
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -42,36 +58,49 @@ interface SidebarItem {
 }
 
 const sidebarItems: SidebarItem[] = [
-  {
-    titleKey: 'dashboard',
-    href: '/visitor/dashboard',
-    icon: LayoutDashboard,
-    roles: ['visitor'],
-  },
-  {
-    titleKey: 'dashboard',
-    href: '/staff/dashboard',
-    icon: LayoutDashboard,
-    roles: ['staff'],
-  },
-  {
-    titleKey: 'dashboard',
-    href: '/head/dashboard',
-    icon: ShieldCheck,
-    roles: ['head'],
-  },
-  {
-    titleKey: 'dashboard',
-    href: '/security/dashboard',
-    icon: QrCode,
-    roles: ['security'],
-  },
-  {
-    titleKey: 'dashboard',
-    href: '/superadmin/dashboard',
-    icon: LayoutDashboard,
-    roles: ['superadmin'],
-  },
+  // VISITOR
+  { titleKey: 'dashboard', href: '/visitor/dashboard', icon: LayoutDashboard, roles: ['visitor'] },
+  { titleKey: 'My Requests', href: '/visitor/requests', icon: FileText, roles: ['visitor'] },
+  { titleKey: 'My Visits', href: '/visitor/visits', icon: Calendar, roles: ['visitor'] },
+  { titleKey: 'My QR Passes', href: '/visitor/passes', icon: QrCode, roles: ['visitor'] },
+  { titleKey: 'Notifications', href: '/visitor/notifications', icon: Bell, roles: ['visitor'] },
+  { titleKey: 'Profile', href: '/visitor/profile', icon: User, roles: ['visitor'] },
+  
+  // STAFF
+  { titleKey: 'dashboard', href: '/staff/dashboard', icon: LayoutDashboard, roles: ['staff'] },
+  { titleKey: 'Pending Requests', href: '/staff/requests', icon: Clock, roles: ['staff'] },
+  { titleKey: 'Offline Visitors', href: '/staff/offline', icon: UserPlus, roles: ['staff'] },
+  { titleKey: 'Visitor Directory', href: '/staff/directory', icon: Users, roles: ['staff'] },
+  { titleKey: 'Profile', href: '/staff/profile', icon: User, roles: ['staff'] },
+  
+  // HEAD
+  { titleKey: 'dashboard', href: '/head/dashboard', icon: LayoutDashboard, roles: ['head'] },
+  { titleKey: 'Approvals', href: '/head/approvals', icon: CheckCircle2, roles: ['head'] },
+  { titleKey: 'Calendar', href: '/head/calendar', icon: Calendar, roles: ['head'] },
+  { titleKey: 'History', href: '/head/history', icon: History, roles: ['head'] },
+  { titleKey: 'Reports', href: '/head/reports', icon: FileBarChart, roles: ['head'] },
+  
+  // SECURITY
+  { titleKey: 'dashboard', href: '/security/dashboard', icon: LayoutDashboard, roles: ['security'] },
+  { titleKey: 'Scanner', href: '/security/scanner', icon: ScanLine, roles: ['security'] },
+  { titleKey: 'Active Visitors', href: '/security/active', icon: UserCheck, roles: ['security'] },
+  { titleKey: 'Expected', href: '/security/expected', icon: Clock, roles: ['security'] },
+  { titleKey: 'Incidents', href: '/security/incidents', icon: AlertTriangle, roles: ['security'] },
+  { titleKey: 'Logs', href: '/security/logs', icon: ScrollText, roles: ['security'] },
+  
+  // SUPER ADMIN
+  { titleKey: 'dashboard', href: '/superadmin/dashboard', icon: LayoutDashboard, roles: ['superadmin'] },
+  { titleKey: 'Branches', href: '/superadmin/branches', icon: Building2, roles: ['superadmin'] },
+  { titleKey: 'Departments', href: '/superadmin/departments', icon: Network, roles: ['superadmin'] },
+  { titleKey: 'Users', href: '/superadmin/users', icon: Users, roles: ['superadmin'] },
+  { titleKey: 'Approvals Monitor', href: '/superadmin/monitor', icon: Activity, roles: ['superadmin'] },
+  { titleKey: 'Analytics', href: '/superadmin/analytics', icon: LineChart, roles: ['superadmin'] },
+  { titleKey: 'Settings', href: '/superadmin/settings', icon: Settings, roles: ['superadmin'] },
+  
+  // RECEPTIONIST
+  { titleKey: 'dashboard', href: '/reception/dashboard', icon: LayoutDashboard, roles: ['receptionist'] },
+  { titleKey: 'Appointments', href: '/reception/appointments', icon: CalendarClock, roles: ['receptionist'] },
+  { titleKey: 'Queue', href: '/reception/queue', icon: Users, roles: ['receptionist'] },
 ];
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
@@ -142,7 +171,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         {/* Logo */}
         <div className="h-16 flex items-center px-6 border-b border-neutral-100 dark:border-neutral-800 shrink-0">
           <Link href="/" className="flex items-center gap-2 font-bold text-xl tracking-tight text-primary">
-            <ClipboardList className="w-6 h-6" />
+            <Image 
+              src="/logo.png" 
+              alt="Tracon Trading PLC" 
+              width={32} 
+              height={32}
+              className="object-contain"
+            />
             <span>Tracon VMS</span>
           </Link>
         </div>

@@ -1,683 +1,125 @@
 'use client';
 
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { 
-  Building2, 
-  CheckCircle2, 
-  Clock, 
-  Search,
-  ScanLine,
-  UserCheck,
-  UserCheck2,
-  LogOut,
-  AlertCircle,
-  Plus,
-  QrCode,
-  Hash,
-  Fingerprint,
-  User as UserIcon,
-  X,
-  ShieldCheck,
-  Camera,
-  MessageSquare
+  ShieldCheck, 
+  ScanLine, 
+  UserCheck, 
+  AlertTriangle,
+  Clock,
+  History
 } from 'lucide-react';
-import { format } from 'date-fns';
-import { toast, Toaster } from 'sonner';
+import Link from 'next/link';
 
 import DashboardLayout from '@/components/layouts/DashboardLayout';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { 
-  Table, 
-  TableBody, 
-  TableCell, 
-  TableHead, 
-  TableHeader, 
-  TableRow 
-} from '@/components/ui/table';
-import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { VisitRequest } from '@/types';
-import { useLanguage } from '@/lib/language-context';
-import QRScanner from '@/components/qr-scanner';
-
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Textarea } from '@/components/ui/textarea';
-import { Label } from '@/components/ui/label';
-
-type SearchMethod = 'code' | 'fayda' | 'name' | 'otp' | 'qr';
 
 export default function SecurityDashboard() {
-  const [requests, setRequests] = useState<VisitRequest[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [scanInput, setScanInput] = useState('');
-  const [searchMethod, setSearchMethod] = useState<SearchMethod>('code');
-  const [processing, setProcessing] = useState(false);
-  const [lastResult, setLastResult] = useState<{success: boolean; message: string; visitor?: any} | null>(null);
-  const { t } = useLanguage();
-  
-  const [branches, setBranches] = useState<any[]>([]);
-  const [departments, setDepartments] = useState<any[]>([]);
-  const [showForm, setShowForm] = useState(false);
-  const [submitting, setSubmitting] = useState(false);
-  const [formData, setFormData] = useState({
-    visitorName: '',
-    faydaNumber: '',
-    phone: '',
-    branchId: '',
-    departmentId: '',
-    personToMeet: '',
-    purpose: '',
-    date: format(new Date(), 'yyyy-MM-dd'),
-    time: format(new Date(), 'HH:mm'),
-    walkIn: true
+  const [stats, setStats] = useState({
+    activeVisitors: 0,
+    expectedToday: 0,
+    totalScansToday: 0,
+    incidentsToday: 0
   });
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetchRequests();
-    fetchBranches();
+    const fetchStats = async () => {
+      try {
+        const res = await fetch('/api/visits');
+        if (res.ok) {
+          const data = await res.json();
+          const requests: VisitRequest[] = data.data;
+          
+          const today = new Date().toDateString();
+          
+          setStats({
+            activeVisitors: requests.filter(r => r.status === 'checked-in').length,
+            expectedToday: requests.filter(r => r.status === 'approved' && new Date(r.requestedDateTime).toDateString() === today).length,
+            totalScansToday: requests.filter(r => (r.status === 'checked-in' || r.status === 'checked-out') && new Date(r.updatedAt).toDateString() === today).length,
+            incidentsToday: 0 // Will hook up to real incident API later
+          });
+        }
+      } catch (e) {
+        console.error(e);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchStats();
   }, []);
 
-  useEffect(() => {
-    if (formData.branchId) {
-      fetchDepartments(formData.branchId);
-    } else {
-      setDepartments([]);
-    }
-  }, [formData.branchId]);
-
-  const fetchBranches = async () => {
-    try {
-      const res = await fetch('/api/branches');
-      if (res.ok) {
-        const data = await res.json();
-        setBranches(data.branches);
-      }
-    } catch (e) {}
-  };
-
-  const fetchDepartments = async (bId: string) => {
-    try {
-      const res = await fetch(`/api/departments?branchId=${bId}`);
-      if (res.ok) {
-        const data = await res.json();
-        setDepartments(data.departments);
-      }
-    } catch (e) {}
-  };
-
-  const handleSubmitWalkIn = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setSubmitting(true);
-    try {
-      const response = await fetch('/api/visits', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...formData, walkIn: true }),
-      });
-
-      const data = await response.json();
-
-      if (response.ok) {
-        toast.success(`✓ ${formData.visitorName} registered and checked in! Code: ${data.visitCode}`);
-        setFormData({
-          visitorName: '',
-          faydaNumber: '',
-          phone: '',
-          branchId: '',
-          departmentId: '',
-          personToMeet: '',
-          purpose: '',
-          date: format(new Date(), 'yyyy-MM-dd'),
-          time: format(new Date(), 'HH:mm'),
-          walkIn: true
-        });
-        setShowForm(false);
-        fetchRequests();
-      } else {
-        toast.error(data.error || 'Failed to register walk-in visitor');
-      }
-    } catch (error) {
-      toast.error('Network error. Please try again.');
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
-  const fetchRequests = async () => {
-    setLoading(true);
-    try {
-      const response = await fetch('/api/visits');
-      if (response.ok) {
-        const data = await response.json();
-        setRequests(data.data);
-      } else {
-        toast.error('Failed to load requests');
-      }
-    } catch (error) {
-      toast.error('Network error. Please try again.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleAction = async (endpoint: string, payload: any) => {
-    setProcessing(true);
-    setLastResult(null);
-    try {
-      const response = await fetch(endpoint, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
-
-      const data = await response.json();
-
-      if (response.ok) {
-        setLastResult({ success: true, message: data.message, visitor: data.visitor });
-        toast.success(data.message);
-        setScanInput('');
-        fetchRequests();
-      } else {
-        setLastResult({ success: false, message: data.error });
-        toast.error(data.error);
-      }
-    } catch (error) {
-      const msg = 'Network error. Please try again.';
-      setLastResult({ success: false, message: msg });
-      toast.error(msg);
-    } finally {
-      setProcessing(false);
-    }
-  };
-
-  // When switching method, clear input and last result
-  const handleMethodChange = (method: SearchMethod) => {
-    setSearchMethod(method);
-    setScanInput('');
-    setLastResult(null);
-  };
-
-  const handleQRScan = useCallback((scannedValue: string) => {
-    // Auto check-in when QR is scanned
-    handleAction('/api/visits/check-in', {
-      method: 'qr',
-      identifier: scannedValue
-    });
-  }, []);  // eslint-disable-line react-hooks/exhaustive-deps
-
-  const handleManualCheckIn = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!scanInput.trim()) return;
-    
-    const trimmed = scanInput.trim();
-    let method: SearchMethod = searchMethod;
-    
-    // Auto-detect by pattern so security doesn't need to switch tabs manually
-    if (/^\d{6}$/.test(trimmed))  method = 'otp';   // 6 digits → SMS OTP
-    if (/^\d{14}$/.test(trimmed)) method = 'fayda'; // 14 digits → Fayda ID
-    
-    handleAction('/api/visits/check-in', {
-      method,
-      identifier: trimmed
-    });
-  };
-
-
-  const handleListAction = (visitId: string, action: 'in' | 'out') => {
-    handleAction(`/api/visits/check-${action}`, { visitId });
-  };
-
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case 'approved': 
-        return <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 gap-1 font-semibold px-2 py-0.5"><CheckCircle2 className="w-3 h-3" /> {t('approved')}</Badge>;
-      case 'checked-in': 
-        return <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 gap-1 font-semibold px-2 py-0.5"><Building2 className="w-3 h-3" /> {t('checkedIn')}</Badge>;
-      case 'checked-out': 
-        return <Badge variant="outline" className="bg-neutral-50 text-neutral-700 border-neutral-200 gap-1 font-semibold px-2 py-0.5"><CheckCircle2 className="w-3 h-3" /> {t('checkedOut')}</Badge>;
-      default: 
-        return <Badge variant="secondary">{status}</Badge>;
-    }
-  };
-
-  const filteredRequests = requests.filter(req => {
-    const term = searchTerm.toLowerCase();
+  if (loading) {
     return (
-      req.visitorName.toLowerCase().includes(term) ||
-      req.visitCode?.toLowerCase().includes(term) ||
-      req.faydaNumber.includes(term) ||
-      req.departmentName.toLowerCase().includes(term)
+      <DashboardLayout>
+        <div className="flex items-center justify-center min-h-[60vh]">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        </div>
+      </DashboardLayout>
     );
-  });
-
-  const expectedVisitors = filteredRequests.filter(r => r.status === 'approved');
-  const currentlyIn = filteredRequests.filter(r => r.status === 'checked-in');
-
-  const searchMethodConfig = [
-    { id: 'code' as SearchMethod, label: 'Visit Code', icon: Hash, placeholder: 'VIS-1234', hint: 'Enter the visit code (e.g., VIS-4821)' },
-    { id: 'fayda' as SearchMethod, label: 'Fayda ID', icon: Fingerprint, placeholder: '14-digit Fayda number', hint: 'Enter 14-digit national ID number' },
-    { id: 'name' as SearchMethod, label: 'Name Search', icon: UserIcon, placeholder: 'Search visitor name', hint: 'Type part of the visitor\'s name' },
-    { id: 'qr' as SearchMethod, label: 'QR Token', icon: QrCode, placeholder: 'Paste QR token here', hint: 'Paste QR code value or use camera' },
-  ];
-
-  const activeMethod = searchMethodConfig.find(m => m.id === searchMethod)!;
+  }
 
   return (
     <DashboardLayout>
-      <Toaster richColors position="top-right" />
-      <div className="space-y-6">
-        {/* Header */}
+      <div className="space-y-8">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-bold tracking-tight text-neutral-900 dark:text-neutral-100 flex items-center gap-2">
-              <ShieldCheck className="w-8 h-8 text-blue-600" />
-              Security Gate
+            <h1 className="text-3xl font-bold tracking-tight text-neutral-900 dark:text-neutral-100">
+              Security Dashboard
             </h1>
-            <p className="text-neutral-500 dark:text-neutral-400 mt-1">
-              Manage visitor check-ins and check-outs for your branch.
+            <p className="text-neutral-500 dark:text-neutral-400">
+              Monitor active visitors, process check-ins, and log incidents.
             </p>
           </div>
-          
-          {/* Walk-in Registration */}
-          <Dialog open={showForm} onOpenChange={setShowForm}>
-            <DialogTrigger asChild>
-              <Button className="font-semibold shadow-lg shadow-blue-500/10 hover:shadow-blue-500/20 bg-blue-600 hover:bg-blue-700 text-white transition-all duration-200 active:scale-95 px-5 h-10.5 rounded-xl gap-2">
-                <Plus className="h-4 w-4" />
-                Walk-in Registration
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="sm:max-w-[540px] rounded-2xl border border-neutral-100 dark:border-neutral-800 shadow-2xl p-6 bg-white dark:bg-neutral-950">
-              <DialogHeader className="space-y-1.5 pb-2 border-b border-neutral-100 dark:border-neutral-900">
-                <DialogTitle className="flex items-center gap-2 text-xl font-bold tracking-tight text-neutral-900 dark:text-neutral-100">
-                  <UserCheck className="w-5.5 h-5.5 text-blue-600 dark:text-blue-500" />
-                  Quick Walk-in Registration
-                </DialogTitle>
-                <p className="text-sm text-neutral-500 dark:text-neutral-400">
-                  Visitor will be immediately checked in upon registration.
-                </p>
-              </DialogHeader>
-              <form onSubmit={handleSubmitWalkIn} className="space-y-4 pt-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-1.5 col-span-2">
-                    <Label htmlFor="wk-visitorName" className="text-xs font-bold text-neutral-600 dark:text-neutral-300 uppercase tracking-wider">Full Name <span className="text-red-500">*</span></Label>
-                    <Input id="wk-visitorName" required value={formData.visitorName} onChange={(e) => setFormData({ ...formData, visitorName: e.target.value })} placeholder="Visitor's full name" className="h-10 px-3.5 rounded-xl border-neutral-200 dark:border-neutral-800 bg-neutral-50/50 dark:bg-neutral-900/30 focus:bg-white dark:focus:bg-neutral-900 transition-all font-medium" />
-                  </div>
-                  <div className="space-y-1.5">
-                    <Label htmlFor="wk-phone" className="text-xs font-bold text-neutral-600 dark:text-neutral-300 uppercase tracking-wider">Phone <span className="text-red-500">*</span></Label>
-                    <Input id="wk-phone" required value={formData.phone} onChange={(e) => setFormData({ ...formData, phone: e.target.value })} placeholder="09xxxxxxxx" className="h-10 px-3.5 rounded-xl border-neutral-200 dark:border-neutral-800 bg-neutral-50/50 dark:bg-neutral-900/30 focus:bg-white dark:focus:bg-neutral-900 transition-all font-medium" />
-                  </div>
-                  <div className="space-y-1.5">
-                    <Label htmlFor="wk-faydaNumber" className="text-xs font-bold text-neutral-600 dark:text-neutral-300 uppercase tracking-wider">Fayda ID <span className="text-red-500">*</span></Label>
-                    <Input id="wk-faydaNumber" required pattern="\d{14}" maxLength={14} value={formData.faydaNumber} onChange={(e) => setFormData({ ...formData, faydaNumber: e.target.value.replace(/\D/g, '') })} placeholder="14 digits" className="h-10 px-3.5 rounded-xl border-neutral-200 dark:border-neutral-800 bg-neutral-50/50 dark:bg-neutral-900/30 focus:bg-white dark:focus:bg-neutral-900 transition-all font-mono font-medium tracking-widest" />
-                  </div>
-                  <div className="space-y-1.5">
-                    <Label htmlFor="wk-branch" className="text-xs font-bold text-neutral-600 dark:text-neutral-300 uppercase tracking-wider">Branch <span className="text-red-500">*</span></Label>
-                    <Select onValueChange={(value) => setFormData({ ...formData, branchId: value, departmentId: '' })} value={formData.branchId} required>
-                      <SelectTrigger id="wk-branch" className="h-10 px-3.5 rounded-xl border-neutral-200 dark:border-neutral-800 bg-neutral-50/50 dark:bg-neutral-900/30 transition-all font-medium"><SelectValue placeholder="Select branch" /></SelectTrigger>
-                      <SelectContent className="rounded-xl border-neutral-200 dark:border-neutral-800">
-                        {branches.map((b) => <SelectItem key={b.id} value={b.id} className="rounded-lg">{b.name}</SelectItem>)}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-1.5">
-                    <Label htmlFor="wk-department" className="text-xs font-bold text-neutral-600 dark:text-neutral-300 uppercase tracking-wider">Department <span className="text-red-500">*</span></Label>
-                    <Select onValueChange={(value) => setFormData({ ...formData, departmentId: value })} value={formData.departmentId} required disabled={!formData.branchId}>
-                      <SelectTrigger id="wk-department" className="h-10 px-3.5 rounded-xl border-neutral-200 dark:border-neutral-800 bg-neutral-50/50 dark:bg-neutral-900/30 transition-all font-medium"><SelectValue placeholder="Select dept" /></SelectTrigger>
-                      <SelectContent className="rounded-xl border-neutral-200 dark:border-neutral-800">
-                        {departments.map((dept) => <SelectItem key={dept.id} value={dept.id} className="rounded-lg">{dept.name}</SelectItem>)}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-1.5 col-span-2">
-                    <Label htmlFor="wk-personToMeet" className="text-xs font-bold text-neutral-600 dark:text-neutral-300 uppercase tracking-wider">Person To Meet <span className="text-neutral-400 dark:text-neutral-500 font-normal">(optional)</span></Label>
-                    <Input id="wk-personToMeet" value={formData.personToMeet} onChange={(e) => setFormData({ ...formData, personToMeet: e.target.value })} placeholder="Name of the person they are visiting" className="h-10 px-3.5 rounded-xl border-neutral-200 dark:border-neutral-800 bg-neutral-50/50 dark:bg-neutral-900/30 focus:bg-white dark:focus:bg-neutral-900 transition-all font-medium" />
-                  </div>
-                  <div className="space-y-1.5 col-span-2">
-                    <Label htmlFor="wk-purpose" className="text-xs font-bold text-neutral-600 dark:text-neutral-300 uppercase tracking-wider">Purpose / Reason <span className="text-red-500">*</span></Label>
-                    <Textarea id="wk-purpose" required className="min-h-[80px] p-3.5 rounded-xl border-neutral-200 dark:border-neutral-800 bg-neutral-50/50 dark:bg-neutral-900/30 focus:bg-white dark:focus:bg-neutral-900 transition-all leading-relaxed font-medium" value={formData.purpose} onChange={(e) => setFormData({ ...formData, purpose: e.target.value })} placeholder="Brief reason for visit" />
-                  </div>
-                </div>
-                <div className="flex items-start gap-2.5 p-3.5 bg-blue-50/50 dark:bg-blue-950/20 border border-blue-100 dark:border-blue-900/50 rounded-xl mt-2">
-                  <ShieldCheck className="w-5 h-5 text-blue-600 dark:text-blue-400 shrink-0 mt-0.5" />
-                  <p className="text-xs text-blue-800 dark:text-blue-300 leading-relaxed font-medium">
-                    This visitor will be <strong>immediately checked in</strong> after registration (verbal approval obtained).
-                  </p>
-                </div>
-                <DialogFooter className="pt-2 border-t border-neutral-100 dark:border-neutral-900 gap-2">
-                  <Button variant="outline" type="button" onClick={() => setShowForm(false)} className="rounded-xl border-neutral-200 dark:border-neutral-800 shadow-none font-semibold">Cancel</Button>
-                  <Button type="submit" disabled={submitting} className="bg-blue-600 hover:bg-blue-700 text-white rounded-xl shadow-md shadow-blue-500/10 font-semibold px-5 transition-all duration-200 active:scale-95">
-                    {submitting && <Clock className="mr-2 h-4 w-4 animate-spin" />}
-                    Register & Check In
-                  </Button>
-                </DialogFooter>
-              </form>
-            </DialogContent>
-          </Dialog>
+          <Link href="/security/scanner">
+            <Button className="font-bold shadow-lg shadow-primary/20 bg-blue-600 hover:bg-blue-700 py-6 px-8 text-lg">
+              <ScanLine className="mr-2 h-6 w-6" />
+              Scan QR / Pass
+            </Button>
+          </Link>
         </div>
 
-        {/* Stats */}
-        <div className="grid grid-cols-2 gap-4">
-          <Card className="bg-amber-50 dark:bg-amber-900/10 border-amber-200 dark:border-amber-900/50 shadow-none">
-            <CardContent className="p-5 flex flex-col items-center justify-center text-center">
-              <span className="text-xs font-bold text-amber-600 dark:text-amber-400 mb-1 uppercase tracking-wider">Awaiting Check-in</span>
-              <span className="text-4xl font-black text-amber-700 dark:text-amber-300">{expectedVisitors.length}</span>
-              <span className="text-xs text-amber-500 mt-1">Approved visitors</span>
-            </CardContent>
-          </Card>
-          <Card className="bg-blue-50 dark:bg-blue-900/10 border-blue-200 dark:border-blue-900/50 shadow-none">
-            <CardContent className="p-5 flex flex-col items-center justify-center text-center">
-              <span className="text-xs font-bold text-blue-600 dark:text-blue-400 mb-1 uppercase tracking-wider">Currently Inside</span>
-              <span className="text-4xl font-black text-blue-700 dark:text-blue-300">{currentlyIn.length}</span>
-              <span className="text-xs text-blue-500 mt-1">On premises now</span>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Check-in Panel */}
-        <Card className="border-neutral-200 dark:border-neutral-800 shadow-sm bg-white dark:bg-neutral-900 border-t-4 border-t-blue-500">
-          <CardHeader className="pb-3">
-            <CardTitle className="flex items-center gap-2">
-              <ScanLine className="w-5 h-5 text-blue-600" />
-              Visitor Verification
-            </CardTitle>
-            <CardDescription>Select how to identify the visitor, then check them in.</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {/* Method selector */}
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2.5">
-              {[
-                { id: 'code'  as SearchMethod, label: 'Visit Code',   icon: Hash },
-                { id: 'fayda' as SearchMethod, label: 'Fayda ID',     icon: Fingerprint },
-                { id: 'otp'   as SearchMethod, label: 'SMS OTP',      icon: MessageSquare },
-                { id: 'name'  as SearchMethod, label: 'Name Search',  icon: UserIcon },
-                { id: 'qr'    as SearchMethod, label: 'QR Camera',    icon: Camera },
-              ].map((method) => {
-                const Icon = method.icon;
-                return (
-                  <button
-                    key={method.id}
-                    type="button"
-                    onClick={() => handleMethodChange(method.id)}
-                    className={`flex flex-col items-center gap-2 p-3.5 rounded-xl border-2 transition-all duration-200 text-center active:scale-95 hover:scale-[1.02] ${
-                      searchMethod === method.id 
-                        ? 'border-blue-500 bg-blue-50/50 dark:bg-blue-950/20 text-blue-600 dark:text-blue-400 shadow-sm shadow-blue-500/5' 
-                        : 'border-neutral-200 dark:border-neutral-800 hover:border-neutral-300 dark:hover:border-neutral-700 bg-neutral-50/30 dark:bg-neutral-900/30 text-neutral-500 dark:text-neutral-400'
-                    }`}
-                  >
-                    <Icon className="w-4.5 h-4.5" />
-                    <span className="text-[10.5px] font-bold tracking-wide leading-tight">{method.label}</span>
-                  </button>
-                );
-              })}
-            </div>
-
-            {/* QR Camera mode */}
-            {searchMethod === 'qr' ? (
-              <div className="space-y-3 pt-2">
-                <QRScanner
-                  onScan={handleQRScan}
-                  onError={(err) => toast.error(`Camera error: ${err}`)}
-                />
-                {/* Result display inside camera mode */}
-                {lastResult && (
-                  <div className={`flex items-start gap-3 p-4 rounded-xl border ${
-                    lastResult.success 
-                      ? 'bg-green-50/50 dark:bg-green-950/20 border-green-200 dark:border-green-800' 
-                      : 'bg-red-50/50 dark:bg-red-950/20 border-red-200 dark:border-red-800'
-                  }`}>
-                    {lastResult.success 
-                      ? <CheckCircle2 className="w-5 h-5 text-green-600 dark:text-green-400 shrink-0 mt-0.5" />
-                      : <AlertCircle className="w-5 h-5 text-red-600 dark:text-red-400 shrink-0 mt-0.5" />
-                    }
-                    <div className="flex-1 min-w-0">
-                      <p className={`font-semibold text-sm ${lastResult.success ? 'text-green-800 dark:text-green-200' : 'text-red-800 dark:text-red-200'}`}>
-                        {lastResult.message}
-                      </p>
-                      {lastResult.success && lastResult.visitor && (
-                        <div className="mt-2.5 space-y-1 text-xs text-green-700 dark:text-green-300 font-medium">
-                          <p><strong>Visitor:</strong> {lastResult.visitor.name}</p>
-                          <p><strong>Department:</strong> {lastResult.visitor.department}</p>
-                          <p><strong>Purpose:</strong> {lastResult.visitor.purpose}</p>
-                        </div>
-                      )}
-                    </div>
-                    <button onClick={() => setLastResult(null)} className="text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300 transition-colors">
-                      <X className="w-4.5 h-4.5" />
-                    </button>
-                  </div>
-                )}
-              </div>
-            ) : (
-              /* Manual text input for code / fayda / otp / name */
-              <div className="space-y-3 pt-2">
-                <form onSubmit={handleManualCheckIn} className="flex gap-2">
-                  <div className="relative flex-1">
-                    {searchMethod === 'code'  && <Hash        className="absolute left-3.5 top-3.5 h-4.5 w-4.5 text-neutral-400" />}
-                    {searchMethod === 'fayda' && <Fingerprint className="absolute left-3.5 top-3.5 h-4.5 w-4.5 text-neutral-400" />}
-                    {searchMethod === 'otp'   && <MessageSquare className="absolute left-3.5 top-3.5 h-4.5 w-4.5 text-neutral-400" />}
-                    {searchMethod === 'name'  && <UserIcon    className="absolute left-3.5 top-3.5 h-4.5 w-4.5 text-neutral-400" />}
-                    <Input 
-                      placeholder={
-                        searchMethod === 'code'  ? 'VIS-1234' :
-                        searchMethod === 'fayda' ? '14-digit Fayda number' :
-                        searchMethod === 'otp'   ? '6-digit SMS code' :
-                        'Search visitor name'
-                      }
-                      value={scanInput}
-                      onChange={(e) => { setScanInput(e.target.value); setLastResult(null); }}
-                      className={`pl-10.5 h-11 rounded-xl border-neutral-200 dark:border-neutral-800 bg-neutral-50/30 focus:bg-white dark:focus:bg-neutral-900 transition-all font-medium ${
-                        searchMethod === 'otp' 
-                          ? 'tracking-[0.5em] text-center font-black text-xl text-blue-600 dark:text-blue-400' 
-                          : searchMethod === 'fayda'
-                          ? 'tracking-[0.1em] font-mono'
-                          : ''
-                      }`}
-                      inputMode={searchMethod === 'otp' || searchMethod === 'fayda' ? 'numeric' : 'text'}
-                      maxLength={searchMethod === 'otp' ? 6 : searchMethod === 'fayda' ? 14 : undefined}
-                      autoFocus
-                    />
-                  </div>
-                  <Button 
-                    type="submit" 
-                    className="bg-blue-600 hover:bg-blue-700 text-white rounded-xl px-6 h-11 font-semibold shadow-md shadow-blue-500/10 transition-all duration-200 active:scale-95 gap-2"
-                    disabled={!scanInput.trim() || processing}
-                  >
-                    {processing ? <Clock className="h-4 w-4 animate-spin" /> : <UserCheck className="h-4 w-4" />}
-                    <span className="hidden sm:inline">Check In</span>
-                  </Button>
-                </form>
- 
-                <p className="text-xs font-semibold text-neutral-400 dark:text-neutral-500">
-                  {searchMethod === 'code'  ? 'Enter the visit code (e.g., VIS-4821)' :
-                   searchMethod === 'fayda' ? 'Enter 14-digit national ID number' :
-                   searchMethod === 'otp'   ? 'Enter the 6-digit code from the approval SMS' :
-                   "Type part of the visitor's name to find them"}
-                </p>
- 
-                {/* Result display */}
-                {lastResult && (
-                  <div className={`flex items-start gap-3 p-4 rounded-xl border ${
-                    lastResult.success 
-                      ? 'bg-green-50/50 dark:bg-green-950/20 border-green-200 dark:border-green-800' 
-                      : 'bg-red-50/50 dark:bg-red-950/20 border-red-200 dark:border-red-800'
-                  }`}>
-                    {lastResult.success 
-                      ? <CheckCircle2 className="w-5 h-5 text-green-600 dark:text-green-400 shrink-0 mt-0.5" />
-                      : <AlertCircle className="w-5 h-5 text-red-600 dark:text-red-400 shrink-0 mt-0.5" />
-                    }
-                    <div className="flex-1 min-w-0">
-                      <p className={`font-semibold text-sm ${lastResult.success ? 'text-green-800 dark:text-green-200' : 'text-red-800 dark:text-red-200'}`}>
-                        {lastResult.message}
-                      </p>
-                      {lastResult.success && lastResult.visitor && (
-                        <div className="mt-2.5 space-y-1 text-xs text-green-700 dark:text-green-300 font-medium">
-                          <p><strong>Department:</strong> {lastResult.visitor.department}</p>
-                          <p><strong>Purpose:</strong> {lastResult.visitor.purpose}</p>
-                          {lastResult.visitor.visitCode && <p><strong>Code:</strong> {lastResult.visitor.visitCode}</p>}
-                        </div>
-                      )}
-                    </div>
-                    <button onClick={() => setLastResult(null)} className="text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300 transition-colors">
-                      <X className="w-4.5 h-4.5" />
-                    </button>
-                  </div>
-                )}
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Visitor Lists */}
-        <Card className="border-neutral-200 dark:border-neutral-800 shadow-sm overflow-hidden bg-white dark:bg-neutral-900">
-          <Tabs defaultValue="approved">
-            <CardHeader className="bg-neutral-50/50 dark:bg-neutral-800/50 border-b border-neutral-100 dark:border-neutral-800 pb-0">
-              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
-                <TabsList className="grid grid-cols-2 w-full sm:w-[280px]">
-                  <TabsTrigger value="approved" className="relative">
-                    Expected
-                    {expectedVisitors.length > 0 && (
-                      <span className="ml-2 bg-amber-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full">{expectedVisitors.length}</span>
-                    )}
-                  </TabsTrigger>
-                  <TabsTrigger value="checked-in" className="relative">
-                    On Premises
-                    {currentlyIn.length > 0 && (
-                      <span className="ml-2 bg-blue-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full">{currentlyIn.length}</span>
-                    )}
-                  </TabsTrigger>
-                </TabsList>
-                
-                <div className="relative w-full sm:max-w-[250px]">
-                  <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-neutral-500" />
-                  <Input 
-                    placeholder="Search name, code, fayda..."
-                    className="pl-9" 
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                  />
-                </div>
-              </div>
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          <Card className="bg-white dark:bg-neutral-900 border-neutral-200 dark:border-neutral-800 shadow-sm hover:shadow-md transition-shadow">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium text-neutral-500 dark:text-neutral-400">Active in Building</CardTitle>
+              <UserCheck className="h-4 w-4 text-green-500" />
             </CardHeader>
-            <CardContent className="p-0">
-              
-              <TabsContent value="approved" className="m-0 border-none outline-none">
-                {loading ? (
-                  <div className="flex flex-col items-center justify-center py-16 gap-3">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-                  </div>
-                ) : expectedVisitors.length === 0 ? (
-                  <div className="flex flex-col items-center justify-center py-20 text-center">
-                    <CheckCircle2 className="w-10 h-10 text-green-400 mb-3" />
-                    <h3 className="text-lg font-semibold text-neutral-900 dark:text-neutral-100">All clear!</h3>
-                    <p className="text-sm text-neutral-500 max-w-[280px]">No visitors waiting to check in.</p>
-                  </div>
-                ) : (
-                  <Table>
-                    <TableHeader>
-                      <TableRow className="bg-neutral-50/50">
-                        <TableHead>Code</TableHead>
-                        <TableHead>Visitor</TableHead>
-                        <TableHead>Department</TableHead>
-                        <TableHead>Purpose</TableHead>
-                        <TableHead className="text-right">Action</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {expectedVisitors.map((request) => (
-                        <TableRow key={request.id}>
-                          <TableCell className="font-mono font-bold text-blue-600 tracking-widest text-sm">
-                            {request.visitCode}
-                          </TableCell>
-                          <TableCell>
-                            <div className="font-semibold text-neutral-900 dark:text-neutral-100">{request.visitorName}</div>
-                            <div className="text-xs text-neutral-500 mt-0.5 space-y-0.5">
-                              <div>Fayda: {request.faydaNumber}</div>
-                              <div>Phone: {request.phone}</div>
-                              {request.personToMeet && <div className="text-blue-500">→ {request.personToMeet}</div>}
-                            </div>
-                          </TableCell>
-                          <TableCell className="text-sm font-medium">{request.departmentName}</TableCell>
-                          <TableCell className="text-xs text-neutral-500 max-w-[140px] truncate">{request.purpose}</TableCell>
-                          <TableCell className="text-right">
-                            <Button 
-                              size="sm"
-                              className="h-8 gap-1.5 bg-blue-600 hover:bg-blue-700 shadow-none"
-                              onClick={() => handleListAction(request.id, 'in')}
-                              disabled={processing}
-                            >
-                              <UserCheck2 className="h-3.5 w-3.5" />
-                              <span>{t('checkIn')}</span>
-                            </Button>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                )}
-              </TabsContent>
-
-              <TabsContent value="checked-in" className="m-0 border-none outline-none">
-                {loading ? (
-                  <div className="flex flex-col items-center justify-center py-16 gap-3">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-                  </div>
-                ) : currentlyIn.length === 0 ? (
-                  <div className="flex flex-col items-center justify-center py-20 text-center">
-                    <Building2 className="w-10 h-10 text-neutral-300 mb-3" />
-                    <h3 className="text-lg font-semibold text-neutral-900 dark:text-neutral-100">No visitors on premises</h3>
-                    <p className="text-sm text-neutral-500 max-w-[280px]">All visitors have checked out.</p>
-                  </div>
-                ) : (
-                  <Table>
-                    <TableHeader>
-                      <TableRow className="bg-neutral-50/50">
-                        <TableHead>Code</TableHead>
-                        <TableHead>Visitor</TableHead>
-                        <TableHead>Department</TableHead>
-                        <TableHead>Time In</TableHead>
-                        <TableHead className="text-right">Action</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {currentlyIn.map((request) => (
-                        <TableRow key={request.id}>
-                          <TableCell className="font-mono text-sm font-bold text-neutral-500 tracking-widest">
-                            {request.visitCode}
-                          </TableCell>
-                          <TableCell>
-                            <div className="font-semibold text-neutral-900 dark:text-neutral-100">{request.visitorName}</div>
-                            <div className="text-xs text-neutral-500 mt-0.5">{request.phone}</div>
-                          </TableCell>
-                          <TableCell className="text-sm font-medium">{request.departmentName}</TableCell>
-                          <TableCell className="text-xs text-neutral-500">
-                            {request.checkedInAt ? format(new Date(request.checkedInAt), 'h:mm a') : '—'}
-                          </TableCell>
-                          <TableCell className="text-right">
-                            <Button 
-                              size="sm"
-                              variant="outline"
-                              className="h-8 gap-1.5 border-neutral-300 shadow-none hover:bg-red-50 hover:text-red-700 hover:border-red-200"
-                              onClick={() => handleListAction(request.id, 'out')}
-                              disabled={processing}
-                            >
-                              <LogOut className="h-3.5 w-3.5" />
-                              <span>{t('checkOut')}</span>
-                            </Button>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                )}
-              </TabsContent>
-
+            <CardContent>
+              <div className="text-3xl font-bold text-neutral-900 dark:text-neutral-100">{stats.activeVisitors}</div>
             </CardContent>
-          </Tabs>
-        </Card>
+          </Card>
+          <Card className="bg-white dark:bg-neutral-900 border-neutral-200 dark:border-neutral-800 shadow-sm hover:shadow-md transition-shadow">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium text-neutral-500 dark:text-neutral-400">Expected Today</CardTitle>
+              <Clock className="h-4 w-4 text-blue-500" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-3xl font-bold text-neutral-900 dark:text-neutral-100">{stats.expectedToday}</div>
+            </CardContent>
+          </Card>
+          <Card className="bg-white dark:bg-neutral-900 border-neutral-200 dark:border-neutral-800 shadow-sm hover:shadow-md transition-shadow">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium text-neutral-500 dark:text-neutral-400">Total Scans Today</CardTitle>
+              <History className="h-4 w-4 text-primary" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-3xl font-bold text-neutral-900 dark:text-neutral-100">{stats.totalScansToday}</div>
+            </CardContent>
+          </Card>
+          <Card className="bg-white dark:bg-neutral-900 border-neutral-200 dark:border-neutral-800 shadow-sm hover:shadow-md transition-shadow">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium text-neutral-500 dark:text-neutral-400">Incidents Today</CardTitle>
+              <AlertTriangle className="h-4 w-4 text-red-500" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-3xl font-bold text-neutral-900 dark:text-neutral-100">{stats.incidentsToday}</div>
+            </CardContent>
+          </Card>
+        </div>
       </div>
     </DashboardLayout>
   );

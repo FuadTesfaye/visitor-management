@@ -5,8 +5,9 @@ import { useRouter } from 'next/navigation';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import * as z from 'zod';
-import { ClipboardList, Loader2, KeyRound, Mail } from 'lucide-react';
+import { Loader2, KeyRound, Mail } from 'lucide-react';
 import { toast, Toaster } from 'sonner';
+import Image from 'next/image';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -97,8 +98,14 @@ export default function LoginPage() {
     <div className="min-h-screen flex items-center justify-center bg-neutral-50 dark:bg-neutral-950 p-4">
       <div className="w-full max-w-[400px] flex flex-col gap-8">
         <div className="flex flex-col items-center gap-2 text-center">
-          <div className="w-12 h-12 bg-primary rounded-xl flex items-center justify-center text-primary-foreground mb-2 shadow-lg shadow-primary/20">
-            <ClipboardList className="w-6 h-6" />
+          <div className="mb-4">
+            <Image 
+              src="/logo.png" 
+              alt="Tracon Trading PLC Logo" 
+              width={120} 
+              height={120}
+              className="object-contain"
+            />
           </div>
           <h1 className="text-2xl font-bold tracking-tight text-neutral-900 dark:text-neutral-100">
             Tracon VMS
