@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "npm run seed && next dev",
+    "dev": "npm run seed && next dev --webpack",
     "seed": "npx tsx src/scripts/seed.ts",
     "build": "next build --webpack",
     "start": "next start",
