@@ -1,23 +1,26 @@
-# Visitor Management System
+# Tracon Visitor Management System
 
-A full-stack Visitor Management System built with Next.js (App Router) using Prisma and Supabase (PostgreSQL) for persistent data storage.
+A full-stack, Enterprise-grade Visitor Management System built with Next.js (App Router), Prisma, and Supabase (PostgreSQL) for persistent data storage. Tailored specifically for **Tracon Trading PLC**, featuring a fully responsive Mobile-First Progressive Web App (PWA) experience.
 
 ## Features
 
-- **Role-based Authentication**: Visitor, Department Approver, and System Admin roles
-- **Visit Request Management**: Visitors can submit visit requests with Fayda number validation
-- **Approval Workflow**: Department approvers can approve/reject requests with QR code generation
-- **QR Code System**: Generate QR tokens for approved visitors with expiration
-- **Check-in/Check-out**: Admin can scan QR codes or manually enter tokens for visitor management
-- **Real-time Dashboard**: Role-specific dashboards with relevant information
+- **Role-based Authentication**: Comprehensive control with 6 distinct roles: Visitor, Staff, Head (Department Approver), Reception, Security, and Superadmin.
+- **Progressive Web App (PWA)**: Installable as a native-like mobile app with a seamless bottom navigation bar and offline caching.
+- **Enterprise Design System**: Tracon-branded styling featuring Deep Navy (`#1c3745`) and Cyan (`#68A4C4`) gradients, backdrop blurs, and glassmorphism.
+- **Visit Request Management**: Visitors can submit visit requests with strict 14-digit Fayda number validation and SMS OTP.
+- **Approval Workflow**: Department Heads can approve/reject requests.
+- **QR Code System**: Generate secure QR passes for approved visitors (embedded with the Tracon logo).
+- **Gate Management & Check-in/Check-out**: Security personnel can scan QR codes or manually verify tokens via a mock camera interface.
+- **Real-time Dashboards**: Role-specific, deeply branded dashboards featuring relevant statistics, charts, and activity logs.
+- **Audit Logs & Monitoring**: Superadmins have full visibility into system usage, incident reporting, and security logs.
 
 ## Tech Stack
 
-- **Frontend**: Next.js 14 (App Router), TypeScript, Tailwind CSS
-- **Backend**: Next.js API Routes, Server Actions
+- **Frontend**: Next.js 16.2.1 (App Router), TypeScript, Tailwind CSS, shadcn/ui, next-pwa
+- **Backend**: Next.js API Routes, Server Actions, Edge Middleware
 - **Authentication**: JWT tokens with HTTP-only cookies
 - **Storage**: Supabase PostgreSQL with Prisma ORM
-- **QR Generation**: qrcode library
+- **QR Generation**: qrcode.react
 - **Password Hashing**: bcryptjs
 
 ## Getting Started
@@ -27,109 +30,53 @@ A full-stack Visitor Management System built with Next.js (App Router) using Pri
 npm install
 ```
 
-2. Run the development server:
+2. Run the database seed (requires `.env` with Supabase connection string):
+```bash
+npm run seed
+```
+
+3. Run the development server:
 ```bash
 npm run dev
 ```
 
-3. Open [http://localhost:3000](http://localhost:3000) in your browser.
+4. Build for production (Generates PWA Service Worker):
+```bash
+npm run build
+npm run start
+```
 
-## Test Accounts
+## Role Test Accounts
 
-The system comes with pre-configured test accounts (password: `password` for all):
+The system seeds with several test accounts (Default password for all seeded accounts: `password`):
 
 - **Visitor**: visitor@test.com
-- **Approver**: approver@test.com (HR Department)
-- **Admin**: admin@test.com
+- **Staff**: staff@test.com
+- **Head (Approver)**: head@test.com 
+- **Reception**: reception@test.com
+- **Security**: security@test.com
+- **Superadmin**: admin@test.com
 
 ## Workflow Demo
 
-1. **Login as Visitor** (`visitor@test.com`):
-   - Submit a visit request with 14-digit Fayda number
-   - Select department and purpose
-   - Choose visit date/time
+1. **Visitor** (`visitor@test.com`): Submits a visit request with Fayda number and targets a specific department.
+2. **Head / Approver** (`head@test.com`): Views the pending requests, reviews details, and approves. A QR code pass is generated and sent to the visitor.
+3. **Visitor**: Can view their active passes in their portal (`/visitor/passes`).
+4. **Security** (`security@test.com`): Scans the QR code (or enters manually) at the gate to Check-in and Check-out the visitor.
+5. **Superadmin** (`admin@test.com`): Monitors the whole lifecycle in the analytics dashboard.
 
-2. **Login as Approver** (`approver@test.com`):
-   - View pending requests for your department
-   - Approve or reject requests
-   - QR code is generated upon approval
+## Database Schema (Prisma)
 
-3. **Login as Admin** (`admin@test.com`):
-   - Use QR Scanner page to check in visitors
-   - For demo: copy QR token from approval response and use manual token entry
-   - View active visitors and check them out
-
-## Project Structure
-
-```
-src/
-├── app/
-│   ├── api/                 # API routes
-│   │   ├── auth/           # Authentication endpoints
-│   │   ├── visits/         # Visit management
-│   │   ├── scan/           # QR scanning
-│   │   └── departments/    # Department data
-│   ├── visitor/            # Visitor pages
-│   ├── approver/           # Approver pages
-│   ├── admin/              # Admin pages
-│   └── login/              # Login page
-├── lib/
-│   ├── auth.ts             # Authentication utilities
-│   ├── data-store.ts       # In-memory data storage
-│   └── qr.ts               # QR code generation
-└── types/
-    └── index.ts            # TypeScript type definitions
-```
-
-## API Endpoints
-
-### Authentication
-- `POST /api/auth/login` - User login
-- `POST /api/auth/logout` - User logout
-
-### Visit Management
-- `POST /api/visits/create` - Create visit request
-- `GET /api/visits/list` - List visit requests (role-filtered)
-- `POST /api/visits/approve` - Approve visit request
-- `POST /api/visits/reject` - Reject visit request
-
-### QR Scanning
-- `POST /api/scan/checkin` - Check in visitor with QR token
-- `POST /api/scan/checkout` - Check out visitor
-
-### Utilities
-- `GET /api/departments` - Get departments list
-- `GET /api/visitors/active` - Get active visitors (admin only)
-
-The system uses a Prisma-managed PostgreSQL schema in Supabase with the following models:
-
-- **Users**: id, email, password, name, role, branchId, departmentId, createdAt, updatedAt
-- **Branches**: id, name, createdAt, updatedAt
-- **Departments**: id, name, branchId, createdAt, updatedAt
-- **VisitRequests**: id, visitorId, visitorName, faydaNumber, phone, branchId, departmentId, departmentName, purpose, requestedDateTime, status, visitType, visitCode, submittedBy, qrToken, qrExpiration, approvedBy, approvedAt, rejectedBy, rejectedAt, rejectionReason, createdAt, updatedAt
-- **VisitLogs**: id, visitRequestId, checkInTime, checkOutTime, processedBy, createdAt, updatedAt
+- **User**: Core authentication, role mapping, and branch/department relations.
+- **Branch**: Geographic or logical division.
+- **Department**: Organizational units under a branch.
+- **VisitRequest**: Core entity tracking the entire lifecycle of a visit (pending -> approved -> checked-in -> checked-out).
+- **VisitLog**: Audit trail for check-in/out timestamps and processor information.
+- **Incident**: Security logging for unauthorized access attempts or rule violations.
 
 ## Security Notes
 
-- Passwords are hashed using bcryptjs
-- JWT tokens stored in HTTP-only cookies
-- Role-based access control via proxy (Next.js 16)
-- Input validation for Fayda numbers (14 digits)
-- QR tokens expire after 24 hours
-
-## Recent Updates
-
-- **Persistent Database**: Migrated from in-memory storage to Supabase PostgreSQL.
-- **Improved Seeding**: Robust seed script for initializing departments, branches, and test users.
-- **Type Safety**: Full Prisma Client integration for better developer experience and reliability.
-
-
-## Future Enhancements
-
-- Add persistent database (PostgreSQL/MongoDB)
-- Implement real QR code scanning with camera
-- Add email notifications for approvals
-- Implement visitor pre-registration
-- Add reporting and analytics
-- Multi-tenant support
-- Advanced security features
+- Passwords are unconditionally hashed via `bcryptjs`.
+- JWT tokens are locked in HTTP-only, secure cookies.
+- Edge Middleware proxy dynamically enforces Role-Based Access Control (RBAC) to ensure unprivileged users cannot access administrative dashboards.
+- QR tokens are securely verified against the database state in real-time.

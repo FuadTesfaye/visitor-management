@@ -227,17 +227,24 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       </aside>
 
       {/* Main Content */}
-      <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+      <div className="flex-1 flex flex-col min-w-0 overflow-hidden relative">
         {/* Header */}
         <header className="h-16 bg-white dark:bg-neutral-900 border-b border-neutral-200 dark:border-neutral-800 flex items-center justify-between px-4 lg:px-8 shrink-0">
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            className="lg:hidden" 
-            onClick={() => setIsSidebarOpen(true)}
-          >
-            <Menu className="h-5 w-5" />
-          </Button>
+          {/* On mobile, we might just want to show the Logo or page title here since Menu is moved to bottom bar, but we'll keep the hamburger if they want the full sidebar */}
+          <div className="flex items-center lg:hidden gap-2">
+            <Image 
+              src="/logo.png" 
+              alt="Logo" 
+              width={28} 
+              height={28}
+              className="object-contain"
+            />
+            <span className="font-bold text-lg text-primary dark:text-white">Tracon VMS</span>
+          </div>
+
+          <div className="hidden lg:block font-semibold text-lg text-neutral-800 dark:text-neutral-200 capitalize">
+            {t(user?.role || '')} Portal
+          </div>
 
           <div className="flex items-center gap-3 ml-auto">
             <LanguageSwitcher />
@@ -245,14 +252,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             <Separator orientation="vertical" className="h-6" />
 
             <Button variant="ghost" size="icon" className="text-neutral-500">
-              <Bell className="h-5 w-5" />
+              <Bell className="h-6 w-6" />
             </Button>
             
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="relative h-8 w-8 rounded-full">
-                  <Avatar className="h-8 w-8">
-                    <AvatarFallback className="bg-primary/10 text-primary flex items-center justify-center">
+                <Button variant="ghost" className="relative h-10 w-10 rounded-full">
+                  <Avatar className="h-10 w-10">
+                    <AvatarFallback className="bg-primary/10 text-primary flex items-center justify-center text-lg">
                       {user?.name?.charAt(0).toUpperCase() || 'U'}
                     </AvatarFallback>
                   </Avatar>
@@ -261,15 +268,15 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               <DropdownMenuContent className="w-56" align="end" forceMount>
                 <DropdownMenuLabel className="font-normal">
                   <div className="flex flex-col space-y-1">
-                    <p className="text-sm font-medium leading-none">{user?.name}</p>
-                    <p className="text-xs leading-none text-muted-foreground capitalize">
+                    <p className="text-base font-medium leading-none">{user?.name}</p>
+                    <p className="text-sm leading-none text-muted-foreground capitalize">
                       {t(user?.role || '')}
                     </p>
                   </div>
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={handleLogout} className="text-red-600 focus:text-red-600 cursor-pointer">
-                  <LogOut className="mr-2 h-4 w-4" />
+                <DropdownMenuItem onClick={handleLogout} className="text-red-600 focus:text-red-600 cursor-pointer h-12 text-base">
+                  <LogOut className="mr-2 h-5 w-5" />
                   <span>{t('logout')}</span>
                 </DropdownMenuItem>
               </DropdownMenuContent>
@@ -278,11 +285,45 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </header>
 
         {/* Page Content */}
-        <main className="flex-1 overflow-y-auto overflow-x-hidden p-4 lg:p-8">
+        <main className="flex-1 overflow-y-auto overflow-x-hidden p-4 lg:p-8 pb-24 lg:pb-8">
           <div className="mx-auto max-w-7xl h-full">
             {children}
           </div>
         </main>
+
+        {/* Mobile Bottom Navigation */}
+        <nav className="fixed bottom-0 left-0 right-0 z-40 bg-white dark:bg-neutral-900 border-t border-neutral-200 dark:border-neutral-800 flex lg:hidden items-end justify-around px-1 pb-[env(safe-area-inset-bottom)] h-16 sm:h-20 shadow-[0_-4px_20px_-10px_rgba(0,0,0,0.1)]">
+          {filteredSidebarItems.slice(0, 4).map((item) => {
+            const isActive = pathname === item.href;
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={cn(
+                  "flex flex-col items-center justify-center w-full h-full space-y-1 transition-colors pt-2 pb-2",
+                  isActive ? "text-[#68A4C4]" : "text-neutral-500 hover:text-neutral-900 dark:hover:text-neutral-300"
+                )}
+              >
+                <item.icon className={cn("w-6 h-6 sm:w-7 sm:h-7", isActive && "fill-current/20")} />
+                <span className="text-[10px] sm:text-xs font-medium truncate w-full text-center px-1">
+                  {t(item.titleKey)}
+                </span>
+              </Link>
+            );
+          })}
+          {/* Menu button for items that don't fit in bottom bar */}
+          {filteredSidebarItems.length > 4 && (
+            <button
+              onClick={() => setIsSidebarOpen(true)}
+              className="flex flex-col items-center justify-center w-full h-full space-y-1 text-neutral-500 hover:text-neutral-900 dark:hover:text-neutral-300 transition-colors pt-2 pb-2"
+            >
+              <Menu className="w-6 h-6 sm:w-7 sm:h-7" />
+              <span className="text-[10px] sm:text-xs font-medium truncate w-full text-center px-1">
+                More
+              </span>
+            </button>
+          )}
+        </nav>
       </div>
     </div>
   );

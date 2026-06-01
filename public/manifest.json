@@ -1,0 +1,21 @@
+{
+  "name": "Tracon Visitor Management System",
+  "short_name": "Tracon VMS",
+  "description": "Visitor Management System for Tracon Trading PLC",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#1c3745",
+  "theme_color": "#1c3745",
+  "icons": [
+    {
+      "src": "/icons/icon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/icons/icon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
