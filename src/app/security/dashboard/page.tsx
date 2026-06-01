@@ -38,7 +38,7 @@ export default function SecurityDashboard() {
           setStats({
             activeVisitors: requests.filter(r => r.status === 'checked-in').length,
             expectedToday: requests.filter(r => r.status === 'approved' && new Date(r.requestedDateTime).toDateString() === today).length,
-            totalScansToday: requests.filter(r => (r.status === 'checked-in' || r.status === 'checked-out') && new Date(r.updatedAt).toDateString() === today).length,
+            totalScansToday: requests.filter(r => (r.status === 'checked-in' || r.status === 'checked-out') && new Date(r.checkedInAt || r.requestedDateTime).toDateString() === today).length,
             incidentsToday: 0 // Will hook up to real incident API later
           });
         }

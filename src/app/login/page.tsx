@@ -95,25 +95,45 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-neutral-50 dark:bg-neutral-950 p-4">
-      <div className="w-full max-w-[400px] flex flex-col gap-8">
-        <div className="flex flex-col items-center gap-2 text-center">
-          <div className="mb-4">
-            <Image 
-              src="/logo.png" 
-              alt="Tracon Trading PLC Logo" 
-              width={120} 
-              height={120}
-              className="object-contain"
-            />
+    <div className="min-h-screen flex">
+      {/* Left side - Brand/Info */}
+      <div className="hidden lg:flex flex-col justify-between w-1/2 bg-primary text-primary-foreground p-12">
+        <div className="flex items-center gap-4">
+          <div className="bg-white p-2 rounded-xl">
+            <Image src="/logo.png" alt="Tracon Trading PLC Logo" width={60} height={60} className="object-contain" />
           </div>
-          <h1 className="text-2xl font-bold tracking-tight text-neutral-900 dark:text-neutral-100">
-            Tracon VMS
+          <span className="text-3xl font-bold tracking-tight text-white">Tracon VMS</span>
+        </div>
+        <div className="max-w-lg">
+          <h1 className="text-4xl font-bold leading-tight mb-4 text-white">
+            Enterprise Visitor Management
           </h1>
-          <p className="text-neutral-500 dark:text-neutral-400 text-sm max-w-[280px]">
-             Welcome to Tracon Trading PLC Visitor Management System.
+          <p className="text-primary-foreground/80 text-lg">
+            Streamline your front desk, enhance security, and provide a seamless experience for all guests visiting Tracon Trading PLC.
           </p>
         </div>
+        <div className="text-sm text-primary-foreground/60">
+          © {new Date().getFullYear()} Tracon Trading PLC. All rights reserved.
+        </div>
+      </div>
+
+      {/* Right side - Login Form */}
+      <div className="w-full lg:w-1/2 flex items-center justify-center bg-background p-4 sm:p-8">
+        <div className="w-full max-w-[400px] flex flex-col gap-8">
+          <div className="flex flex-col items-center gap-2 text-center lg:hidden">
+            <div className="mb-4 bg-white p-3 rounded-xl shadow-sm border border-neutral-100 dark:border-neutral-800">
+              <Image 
+                src="/logo.png" 
+                alt="Tracon Trading PLC Logo" 
+                width={80} 
+                height={80}
+                className="object-contain"
+              />
+            </div>
+            <h1 className="text-2xl font-bold tracking-tight text-neutral-900 dark:text-neutral-100">
+              Tracon VMS
+            </h1>
+          </div>
 
         <Card className="border-neutral-200 dark:border-neutral-800 shadow-sm overflow-hidden bg-white dark:bg-neutral-900">
           <CardHeader className="pb-4">
@@ -206,11 +226,8 @@ export default function LoginPage() {
             </div>
           </CardFooter>
         </Card>
-
-        <p className="text-center text-xs text-neutral-400">
-          © 2026 Tracon VMS. All rights reserved.
-        </p>
       </div>
+    </div>
     </div>
   );
 }

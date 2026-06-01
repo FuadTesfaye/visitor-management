@@ -37,7 +37,7 @@ export default function SecurityExpectedVisitors() {
         // Show only 'approved' visits whose date is >= today
         const todayStr = new Date().toISOString().split('T')[0];
         setVisits(data.data.filter((r: VisitRequest) => 
-          r.status === 'approved' && r.requestedDateTime.startsWith(todayStr)
+          r.status === 'approved' && r.requestedDateTime && new Date(r.requestedDateTime).toISOString().startsWith(todayStr)
         ));
       }
     } catch (e) {

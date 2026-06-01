@@ -37,7 +37,7 @@ export default function Appointments() {
         // Show approved and checked-in visits
         setVisits(data.data.filter((r: VisitRequest) => 
           ['approved', 'checked-in'].includes(r.status)
-        ).sort((a: any, b: any) => new Date(a.visitDate).getTime() - new Date(b.visitDate).getTime()));
+        ).sort((a: any, b: any) => new Date(a.requestedDateTime).getTime() - new Date(b.requestedDateTime).getTime()));
       }
     } catch (e) {
       console.error(e);
@@ -133,10 +133,10 @@ export default function Appointments() {
                         </TableCell>
                         <TableCell>
                           <div className="font-medium">
-                            {format(new Date(visit.visitDate), 'MMM d, yyyy')}
+                            {format(new Date(visit.requestedDateTime), 'MMM d, yyyy')}
                           </div>
-                          <div className="text-xs text-neutral-500 flex items-center gap-1 mt-0.5">
-                            <Clock className="w-3 h-3" /> {visit.time}
+                          <div className="text-xs text-neutral-500 flex items-center gap-1 mt-1">
+                            <Clock className="w-3 h-3" /> {format(new Date(visit.requestedDateTime), 'HH:mm')}
                           </div>
                         </TableCell>
                         <TableCell>

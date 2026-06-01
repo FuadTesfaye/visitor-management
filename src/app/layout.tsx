@@ -1,16 +1,11 @@
 import type { Metadata } from 'next';
-import { Geist, Geist_Mono } from 'next/font/google';
+import { Open_Sans } from 'next/font/google';
 import { LanguageProvider } from '@/lib/language-context';
 import { Toaster } from 'sonner';
 import './globals.css';
 
-const geistSans = Geist({
-  variable: '--font-geist-sans',
-  subsets: ['latin'],
-});
-
-const geistMono = Geist_Mono({
-  variable: '--font-geist-mono',
+const openSans = Open_Sans({
+  variable: '--font-sans',
   subsets: ['latin'],
 });
 
@@ -27,9 +22,9 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${openSans.variable} font-sans h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col bg-slate-50">
+      <body className="min-h-full flex flex-col bg-background text-foreground">
         <LanguageProvider>
           {children}
         </LanguageProvider>

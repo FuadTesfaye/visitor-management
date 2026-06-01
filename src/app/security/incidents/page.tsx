@@ -170,7 +170,7 @@ export default function SecurityIncidents() {
                     )}
                   </div>
                   <div className="text-xs text-neutral-500 mt-1">
-                    {format(new Date(incident.createdAt), 'PPpp')}
+                    {incident.createdAt ? format(new Date(incident.createdAt), 'PPpp') : 'N/A'}
                   </div>
                 </CardHeader>
                 <CardContent className="flex-1">

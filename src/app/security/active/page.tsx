@@ -133,10 +133,10 @@ export default function SecurityActiveVisitors() {
                           <div className="flex items-center gap-1.5 text-sm text-neutral-600 dark:text-neutral-400">
                             <Clock className="w-3.5 h-3.5" />
                             {/* Typically you'd show the actual check-in time if stored separately, using updatedAt for now */}
-                            {format(new Date(visit.updatedAt), 'h:mm a')}
+                            {format(new Date(visit.checkedInAt || visit.requestedDateTime), 'h:mm a')}
                           </div>
                           <div className="text-xs text-neutral-400">
-                            {format(new Date(visit.updatedAt), 'MMM d, yyyy')}
+                            {format(new Date(visit.checkedInAt || visit.requestedDateTime), 'MMM d, yyyy')}
                           </div>
                         </TableCell>
                         <TableCell>

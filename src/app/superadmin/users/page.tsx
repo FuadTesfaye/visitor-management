@@ -276,7 +276,7 @@ export default function SuperAdminUsers() {
                           {getRoleBadge(user.role)}
                         </TableCell>
                         <TableCell className="text-sm text-neutral-500">
-                          {new Date(user.createdAt).toLocaleDateString()}
+                          {user.createdAt ? new Date(user.createdAt).toLocaleDateString() : 'N/A'}
                         </TableCell>
                         <TableCell className="text-right">
                           <AlertDialog>

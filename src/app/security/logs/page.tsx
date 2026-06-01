@@ -108,8 +108,8 @@ export default function SecurityLogs() {
                     {filteredLogs.map((log) => (
                       <TableRow key={log.id}>
                         <TableCell className="whitespace-nowrap">
-                          <div className="font-medium">{format(new Date(log.createdAt), 'MMM d, yyyy')}</div>
-                          <div className="text-xs text-neutral-500">{format(new Date(log.createdAt), 'h:mm:ss a')}</div>
+                          <div className="font-medium">{log.createdAt ? format(new Date(log.createdAt), 'MMM d, yyyy') : 'N/A'}</div>
+                          <div className="text-xs text-neutral-500">{log.createdAt ? format(new Date(log.createdAt), 'h:mm:ss a') : 'N/A'}</div>
                         </TableCell>
                         <TableCell>
                           <span className="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-neutral-100 dark:bg-neutral-800 text-neutral-800 dark:text-neutral-200 capitalize">

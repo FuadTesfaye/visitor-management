@@ -63,8 +63,7 @@ export default function RegisterWalkIn() {
       const today = new Date();
       const payload = {
         ...formData,
-        visitDate: today.toISOString().split('T')[0],
-        time: today.toTimeString().substring(0, 5)
+        requestedDateTime: today.toISOString()
       };
 
       const res = await fetch('/api/visits', {

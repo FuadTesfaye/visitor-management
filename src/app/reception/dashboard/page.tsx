@@ -40,7 +40,7 @@ export default function ReceptionDashboard() {
   };
 
   const todayStr = format(new Date(), 'yyyy-MM-dd');
-  const todaysAppointments = visits.filter(v => v.visitDate.startsWith(todayStr) && v.status === 'approved');
+  const todaysAppointments = visits.filter(v => v.requestedDateTime && new Date(v.requestedDateTime).toISOString().startsWith(todayStr) && v.status === 'approved');
   const activeVisitors = visits.filter(v => v.status === 'checked-in');
 
   return (
@@ -103,7 +103,7 @@ export default function ReceptionDashboard() {
             </CardHeader>
             <CardContent>
               <div className="text-3xl font-bold text-neutral-900 dark:text-neutral-100">
-                {visits.filter(v => v.visitDate.startsWith(todayStr) && v.visitCode.startsWith('WK-')).length}
+                {visits.filter(v => v.requestedDateTime && new Date(v.requestedDateTime).toISOString().startsWith(todayStr) && v.visitCode?.startsWith('WK-')).length}
               </div>
             </CardContent>
           </Card>

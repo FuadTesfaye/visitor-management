@@ -33,9 +33,9 @@ export default function StaffDashboardOverview() {
           const today = new Date().toDateString();
           
           setStats({
-            todayRequests: requests.filter(r => new Date(r.createdAt).toDateString() === today).length,
+            todayRequests: requests.filter(r => r.createdAt && new Date(r.createdAt).toDateString() === today).length,
             pendingApprovals: requests.filter(r => r.status === 'pending').length,
-            walkInsToday: requests.filter(r => r.walkIn && new Date(r.createdAt).toDateString() === today).length
+            walkInsToday: requests.filter(r => r.walkIn && r.createdAt && new Date(r.createdAt).toDateString() === today).length
           });
         }
       } catch (e) {

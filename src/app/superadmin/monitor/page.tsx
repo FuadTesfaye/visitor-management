@@ -35,9 +35,9 @@ export default function ApprovalsMonitor() {
         recentDate.setDate(recentDate.getDate() - 7);
         
         setVisits(data.data.filter((r: VisitRequest) => 
-          new Date(r.createdAt) > recentDate && 
+          r.createdAt && new Date(r.createdAt) > recentDate && 
           ['pending', 'approved', 'rejected'].includes(r.status)
-        ).sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()));
+        ).sort((a: any, b: any) => (b.createdAt && a.createdAt) ? new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime() : 0));
       }
     } catch (e) {
       console.error(e);
@@ -100,10 +100,10 @@ export default function ApprovalsMonitor() {
                       <TableRow key={visit.id}>
                         <TableCell>
                           <div className="font-medium text-neutral-900 dark:text-neutral-100">
-                            {format(new Date(visit.createdAt), 'MMM d, yyyy')}
+                            {visit.createdAt && format(new Date(visit.createdAt), 'MMM d, yyyy')}
                           </div>
                           <div className="text-xs text-neutral-500">
-                            {format(new Date(visit.createdAt), 'h:mm a')}
+                            {visit.createdAt && format(new Date(visit.createdAt), 'h:mm a')}
                           </div>
                         </TableCell>
                         <TableCell>
