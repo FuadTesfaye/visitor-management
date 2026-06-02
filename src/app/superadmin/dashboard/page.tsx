@@ -18,7 +18,7 @@ import { Button } from '@/components/ui/button';
 export default function SuperAdminDashboard() {
   const [stats, setStats] = useState({
     users: 0,
-    branches: 0,
+    locations: 0,
     departments: 0,
     activeVisits: 0,
     openIncidents: 0
@@ -29,23 +29,23 @@ export default function SuperAdminDashboard() {
     // In a real app, this would be a single comprehensive dashboard API call
     const fetchDashboardStats = async () => {
       try {
-        const [usersRes, branchesRes, deptsRes, visitsRes, incidentsRes] = await Promise.all([
+        const [usersRes, locationsRes, deptsRes, visitsRes, incidentsRes] = await Promise.all([
           fetch('/api/admin/users'),
-          fetch('/api/branches'),
+          fetch('/api/locations'),
           fetch('/api/departments'),
           fetch('/api/visits'),
           fetch('/api/incidents')
         ]);
         
         const users = usersRes.ok ? (await usersRes.json()).users : [];
-        const branches = branchesRes.ok ? (await branchesRes.json()).branches : [];
+        const locations = locationsRes.ok ? (await locationsRes.json()).locations : [];
         const depts = deptsRes.ok ? (await deptsRes.json()).departments : [];
         const visits = visitsRes.ok ? (await visitsRes.json()).data : [];
         const incidents = incidentsRes.ok ? (await incidentsRes.json()).incidents : [];
         
         setStats({
           users: users.length,
-          branches: branches.length,
+          locations: locations.length,
           departments: depts.length,
           activeVisits: visits.filter((v: any) => v.status === 'checked-in').length,
           openIncidents: incidents.filter((i: any) => i.status === 'open').length
@@ -79,7 +79,7 @@ export default function SuperAdminDashboard() {
               System Administration
             </h1>
             <p className="text-neutral-500 dark:text-neutral-400">
-              Manage branches, departments, users, and monitor system health.
+              Manage locations, departments, users, and monitor system health.
             </p>
           </div>
           <div className="flex gap-2">
@@ -108,11 +108,11 @@ export default function SuperAdminDashboard() {
           
           <Card className="bg-white dark:bg-neutral-900 border-neutral-200 dark:border-neutral-800 shadow-sm hover:shadow-md transition-shadow">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-neutral-500 dark:text-neutral-400">Branches</CardTitle>
+              <CardTitle className="text-sm font-medium text-neutral-500 dark:text-neutral-400">Locationes</CardTitle>
               <Building2 className="h-4 w-4 text-purple-500" />
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold text-neutral-900 dark:text-neutral-100">{stats.branches}</div>
+              <div className="text-3xl font-bold text-neutral-900 dark:text-neutral-100">{stats.locations}</div>
             </CardContent>
           </Card>
           

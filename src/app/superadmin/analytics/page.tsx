@@ -48,7 +48,7 @@ export default function SuperAdminAnalytics() {
             System Analytics
           </h1>
           <p className="text-neutral-500 dark:text-neutral-400 mt-1">
-            Global metrics and visitor trends across all branches.
+            Global metrics and visitor trends across all locations.
           </p>
         </div>
 

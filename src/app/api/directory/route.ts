@@ -15,19 +15,19 @@ export async function GET() {
         email: true,
         role: true,
         departmentId: true,
-        branchId: true
+        locationId: true
       },
       orderBy: { name: 'asc' }
     });
 
-    // Fetch branches and departments separately since relations aren't defined in schema
-    const branches = await prisma.branch.findMany();
+    // Fetch locations and departments separately since relations aren't defined in schema
+    const locations = await prisma.location.findMany();
     const departments = await prisma.department.findMany();
 
     const directory = users.map(user => ({
       ...user,
       department: departments.find(d => d.id === user.departmentId) || null,
-      branch: branches.find(b => b.id === user.branchId) || null
+      location: locations.find(b => b.id === user.locationId) || null
     }));
 
     return NextResponse.json({ directory });

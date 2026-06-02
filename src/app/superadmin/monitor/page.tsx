@@ -114,7 +114,7 @@ export default function ApprovalsMonitor() {
                           {visit.departmentName}
                         </TableCell>
                         <TableCell>
-                          {visit.personToMeet}
+                          {visit.hostEmployeeName}
                         </TableCell>
                         <TableCell>
                           {getStatusBadge(visit.status)}

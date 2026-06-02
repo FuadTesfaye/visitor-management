@@ -43,7 +43,7 @@ interface User {
   name: string;
   email: string;
   role: string;
-  branchId: string | null;
+  locationId: string | null;
   departmentId: string | null;
   createdAt: string;
 }
@@ -59,7 +59,7 @@ export default function SuperAdminUsers() {
     email: '', 
     password: '', 
     role: 'visitor',
-    branchId: '',
+    locationId: '',
     departmentId: ''
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -98,7 +98,7 @@ export default function SuperAdminUsers() {
       
       if (res.ok) {
         setUsers([data.user, ...users]);
-        setFormData({ name: '', email: '', password: '', role: 'visitor', branchId: '', departmentId: '' });
+        setFormData({ name: '', email: '', password: '', role: 'visitor', locationId: '', departmentId: '' });
         setIsDialogOpen(false);
         toast.success('User created successfully');
       } else {

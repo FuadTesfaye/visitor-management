@@ -12,12 +12,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 
 export default function RegisterWalkIn() {
   const [departments, setDepartments] = useState<any[]>([]);
-  const [branches, setBranches] = useState<any[]>([]);
+  const [locations, setLocationes] = useState<any[]>([]);
   
   const [formData, setFormData] = useState({
-    branchId: '',
+    locationId: '',
     departmentId: '',
-    personToMeet: '',
+    hostEmployeeName: '',
     purpose: '',
     visitorName: '',
     phone: '',
@@ -33,14 +33,14 @@ export default function RegisterWalkIn() {
 
   const fetchFormData = async () => {
     try {
-      const [branchRes, deptRes] = await Promise.all([
-        fetch('/api/branches'),
+      const [locationRes, deptRes] = await Promise.all([
+        fetch('/api/locations'),
         fetch('/api/departments')
       ]);
       
-      if (branchRes.ok) {
-        const data = await branchRes.json();
-        setBranches(data.branches);
+      if (locationRes.ok) {
+        const data = await locationRes.json();
+        setLocationes(data.locations);
       }
       
       if (deptRes.ok) {
@@ -52,7 +52,7 @@ export default function RegisterWalkIn() {
     }
   };
 
-  const filteredDepartments = departments.filter(d => d.branchId === formData.branchId);
+  const filteredDepartments = departments.filter(d => d.locationId === formData.locationId);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -89,9 +89,9 @@ export default function RegisterWalkIn() {
 
   const handleReset = () => {
     setFormData({
-      branchId: '',
+      locationId: '',
       departmentId: '',
-      personToMeet: '',
+      hostEmployeeName: '',
       purpose: '',
       visitorName: '',
       phone: '',
@@ -175,17 +175,17 @@ export default function RegisterWalkIn() {
                   <h3 className="font-medium mb-4">Visit Details</h3>
                   <div className="grid sm:grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <label className="text-sm font-medium">Branch <span className="text-red-500">*</span></label>
+                      <label className="text-sm font-medium">Location <span className="text-red-500">*</span></label>
                       <Select 
                         required
-                        value={formData.branchId} 
-                        onValueChange={(v) => setFormData({...formData, branchId: v, departmentId: ''})}
+                        value={formData.locationId} 
+                        onValueChange={(v) => setFormData({...formData, locationId: v, departmentId: ''})}
                       >
                         <SelectTrigger>
-                          <SelectValue placeholder="Select Branch" />
+                          <SelectValue placeholder="Select Location" />
                         </SelectTrigger>
                         <SelectContent>
-                          {branches.map(b => (
+                          {locations.map(b => (
                             <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>
                           ))}
                         </SelectContent>
@@ -196,12 +196,12 @@ export default function RegisterWalkIn() {
                       <label className="text-sm font-medium">Department <span className="text-red-500">*</span></label>
                       <Select 
                         required
-                        disabled={!formData.branchId}
+                        disabled={!formData.locationId}
                         value={formData.departmentId} 
                         onValueChange={(v) => setFormData({...formData, departmentId: v})}
                       >
                         <SelectTrigger>
-                          <SelectValue placeholder={formData.branchId ? "Select Department" : "Select Branch First"} />
+                          <SelectValue placeholder={formData.locationId ? "Select Department" : "Select Location First"} />
                         </SelectTrigger>
                         <SelectContent>
                           {filteredDepartments.map(d => (
@@ -216,8 +216,8 @@ export default function RegisterWalkIn() {
                       <Input 
                         required
                         placeholder="Host Name"
-                        value={formData.personToMeet}
-                        onChange={(e) => setFormData({...formData, personToMeet: e.target.value})}
+                        value={formData.hostEmployeeName}
+                        onChange={(e) => setFormData({...formData, hostEmployeeName: e.target.value})}
                       />
                     </div>
                     

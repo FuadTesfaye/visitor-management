@@ -42,7 +42,7 @@ export async function POST(request: NextRequest) {
       data: {
         title,
         description,
-        branchId: 'default-branch', // Hardcoded for demo
+        locationId: 'default-location', // Hardcoded for demo
         reportedBy: user.userId,
         status: 'open'
       }

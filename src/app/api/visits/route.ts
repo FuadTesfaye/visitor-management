@@ -1,16 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { v4 as uuidv4 } from 'uuid';
 import { prisma } from '@/lib/db';
+import { determineRouting } from '@/lib/routing';
+import { notifyApproverOfNewRequest } from '@/lib/notifications';
 
 // Utility to verify session from headers
 const getUserFromHeaders = (request: NextRequest) => {
   const userId = request.headers.get('x-user-id');
   const role = request.headers.get('x-user-role');
-  const branchId = request.headers.get('x-user-branch-id');
+  const locationId = request.headers.get('x-user-location-id');
   const departmentId = request.headers.get('x-user-department-id');
   
   if (!userId) return null;
-  return { userId, role, branchId, departmentId };
+  return { userId, role, locationId, departmentId };
 };
 
 function generateVisitCode() {
@@ -34,10 +36,9 @@ export async function POST(request: NextRequest) {
       visitorName, 
       faydaNumber, 
       phone,
-      branchId,
       departmentId, 
+      hostEmployeeId,
       purpose,
-      personToMeet,
       date,
       time,
       walkIn
@@ -48,27 +49,33 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Fayda ID must be exactly 14 digits' }, { status: 400 });
     }
 
-    if (!branchId || !departmentId || !visitorName || !phone || !purpose || !date || !time) {
+    if (!visitorName || !phone || !purpose || !date || !time) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
 
-    const targetDept = await prisma.department.findUnique({
-      where: { id: departmentId }
-    });
-    
-    if (!targetDept) {
-      return NextResponse.json({ error: 'Invalid department' }, { status: 400 });
+    if (!departmentId && !hostEmployeeId) {
+      return NextResponse.json({ error: 'Either departmentId or hostEmployeeId is required' }, { status: 400 });
     }
 
-    const targetBranch = await prisma.branch.findUnique({
-      where: { id: branchId }
-    });
+    // Determine routing using the new engine
+    let routingData;
+    try {
+      routingData = await determineRouting({ departmentId, hostEmployeeId });
+    } catch (err: any) {
+      return NextResponse.json({ error: err.message || 'Routing failed' }, { status: 400 });
+    }
+
+    let hostName: string | null = null;
+    if (hostEmployeeId) {
+      const host = await prisma.user.findUnique({ where: { id: hostEmployeeId } });
+      hostName = host?.name || null;
+    }
 
     // Combine date and time
     const requestedDateTime = new Date(`${date}T${time}`);
 
-    // Walk-in created by Staff or Security vs Digital created by Visitor
-    const isOffline = user.role === 'staff' || user.role === 'security';
+    // Walk-in created by Staff/Security/Reception
+    const isOffline = ['staff', 'security', 'receptionist'].includes(user.role || '');
     const isWalkIn = walkIn === true && user.role === 'security';
 
     // For immediate walk-in (security registers and immediately checks in)
@@ -81,15 +88,16 @@ export async function POST(request: NextRequest) {
       const [newRequest, log] = await prisma.$transaction(async (tx) => {
         const req = await tx.visitRequest.create({
           data: {
-            visitorId: uuidv4(),
+            visitorId: uuidv4(), // Physical identifier
             visitorName,
             faydaNumber,
             phone,
-            branchId,
-            branchName: targetBranch?.name || '',
-            departmentId,
-            departmentName: targetDept.name,
-            personToMeet: personToMeet || null,
+            locationId: routingData.locationId,
+            locationName: routingData.locationName,
+            departmentId: routingData.departmentId,
+            departmentName: routingData.departmentName,
+            hostEmployeeId,
+            hostEmployeeName: hostName,
             purpose,
             requestedDateTime: now,
             status: 'checked-in',
@@ -99,7 +107,7 @@ export async function POST(request: NextRequest) {
             qrToken,
             qrExpiration: expiration,
             submittedBy: user.userId,
-            approvedBy: user.userId,
+            approvedBy: user.userId, // Auto-approved by security
             approvedAt: now,
             checkedInAt: now,
             checkedInBy: user.userId,
@@ -128,15 +136,16 @@ export async function POST(request: NextRequest) {
     // Normal flow: create pending request
     const newRequest = await prisma.visitRequest.create({
       data: {
-        visitorId: user.role === 'visitor' ? user.userId : uuidv4(),
+        visitorId: uuidv4(), // Physical identifier
         visitorName,
         faydaNumber,
         phone,
-        branchId,
-        branchName: targetBranch?.name || '',
-        departmentId,
-        departmentName: targetDept.name,
-        personToMeet: personToMeet || null,
+        locationId: routingData.locationId,
+        locationName: routingData.locationName,
+        departmentId: routingData.departmentId,
+        departmentName: routingData.departmentName,
+        hostEmployeeId,
+        hostEmployeeName: hostName,
         purpose,
         requestedDateTime,
         status: 'pending',
@@ -145,6 +154,14 @@ export async function POST(request: NextRequest) {
         submittedBy: isOffline ? user.userId : null,
       }
     });
+
+    // Notify Approver (Head)
+    if (routingData.approverId) {
+      const approver = await prisma.user.findUnique({ where: { id: routingData.approverId } });
+      if (approver) {
+        await notifyApproverOfNewRequest(approver.id, visitorName, approver.phone);
+      }
+    }
 
     return NextResponse.json({ 
       message: 'Visit request submitted successfully',
@@ -167,27 +184,24 @@ export async function GET(request: NextRequest) {
     let query: any = {};
 
     // Filter based on role
-    if (user.role === 'visitor') {
-      query.visitorId = user.userId;
-    } 
-    else if (user.role === 'staff') {
-      // Staff sees all requests they submitted
-      query.submittedBy = user.userId;
+    if (user.role === 'staff' || user.role === 'receptionist') {
+      // Staff sees requests they submitted OR requests where they are the host
+      query.OR = [
+        { submittedBy: user.userId },
+        { hostEmployeeId: user.userId }
+      ];
     }
     else if (user.role === 'head') {
-      // Department head sees all requests for their department in their branch
+      // Department head sees all requests for their department
       if (user.departmentId) {
         query.departmentId = user.departmentId;
       }
-      if (user.branchId) {
-        query.branchId = user.branchId;
-      }
     }
     else if (user.role === 'security') {
-      // Security sees approved + checked-in for their branch (no date filter - they need to see all active)
+      // Security sees approved + checked-in for their location
       query = {
         status: { in: ['approved', 'checked-in'] },
-        branchId: user.branchId,
+        locationId: user.locationId,
       };
     }
     else if (user.role === 'superadmin') {

@@ -21,13 +21,13 @@ export async function PATCH(
     }
 
     const { id } = await params;
-    const { name, branchId } = await request.json();
+    const { name, locationId } = await request.json();
 
     const department = await prisma.department.update({ 
       where: { id }, 
       data: { 
         ...(name && { name: name.trim() }),
-        ...(branchId && { branchId })
+        ...(locationId && { locationId })
       } 
     });
     return NextResponse.json({ department });

@@ -3,11 +3,11 @@ import { prisma } from '@/lib/db';
 
 export async function GET(request: NextRequest) {
   try {
-    const branchId = request.nextUrl.searchParams.get('branchId');
+    const locationId = request.nextUrl.searchParams.get('locationId');
     
     let query = {};
-    if (branchId) {
-      query = { where: { branchId } };
+    if (locationId) {
+      query = { where: { locationId } };
     }
     
     const departments = await prisma.department.findMany(query);

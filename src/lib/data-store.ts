@@ -1,15 +1,15 @@
-import { User, Branch, Department, VisitRequest, VisitLog } from '@/types';
+import { User, Location, Department, VisitRequest, VisitLog } from '@/types';
 
 // In-memory data stores with singleton pattern for HMR persistence
 declare global {
   var __vms_users: User[] | undefined;
-  var __vms_branches: Branch[] | undefined;
+  var __vms_locations: Location[] | undefined;
   var __vms_departments: Department[] | undefined;
   var __vms_visitRequests: VisitRequest[] | undefined;
   var __vms_visitLogs: VisitLog[] | undefined;
 }
 
-export let branches: Branch[] = globalThis.__vms_branches || [
+export let locations: Location[] = globalThis.__vms_locations || [
   { id: '1', name: 'Head Office (Jemo)' },
   { id: '2', name: 'Sales Office (Tikur Anbessa)' },
   { id: '3', name: 'FMCG Shop (Merkato)' },
@@ -17,13 +17,13 @@ export let branches: Branch[] = globalThis.__vms_branches || [
 ];
 
 export let departments: Department[] = globalThis.__vms_departments || [
-  { id: '1', name: 'Coffee Export', branchId: '1' },
-  { id: '2', name: 'Pharmaceutical', branchId: '1' },
-  { id: '3', name: 'HR', branchId: '1' },
-  { id: '4', name: 'Finance', branchId: '1' },
-  { id: '5', name: 'Real Estate', branchId: '2' },
-  { id: '6', name: 'FMCG', branchId: '3' },
-  { id: '7', name: 'Aluminum', branchId: '4' },
+  { id: '1', name: 'Coffee Export', locationId: '1', headId: '3' },
+  { id: '2', name: 'Pharmaceutical', locationId: '1', headId: '3' },
+  { id: '3', name: 'HR', locationId: '1', headId: '3' },
+  { id: '4', name: 'Finance', locationId: '1', headId: '3' },
+  { id: '5', name: 'Real Estate', locationId: '2', headId: '3' },
+  { id: '6', name: 'FMCG', locationId: '3', headId: '3' },
+  { id: '7', name: 'Aluminum', locationId: '4', headId: '3' },
 ];
 
 export let users: User[] = globalThis.__vms_users || [
@@ -40,7 +40,7 @@ export let users: User[] = globalThis.__vms_users || [
     password: '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', // password
     name: 'Test Staff',
     role: 'staff',
-    branchId: '1',
+    locationId: '1',
     departmentId: '1',
   },
   {
@@ -49,7 +49,7 @@ export let users: User[] = globalThis.__vms_users || [
     password: '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', // password
     name: 'Test Head',
     role: 'head',
-    branchId: '1',
+    locationId: '1',
     departmentId: '1',
   },
   {
@@ -58,7 +58,7 @@ export let users: User[] = globalThis.__vms_users || [
     password: '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', // password
     name: 'Test Security',
     role: 'security',
-    branchId: '1',
+    locationId: '1',
   },
   {
     id: '5',
@@ -75,7 +75,7 @@ export let visitLogs: VisitLog[] = globalThis.__vms_visitLogs || [];
 
 if (process.env.NODE_ENV !== 'production') {
   globalThis.__vms_users = users;
-  globalThis.__vms_branches = branches;
+  globalThis.__vms_locations = locations;
   globalThis.__vms_departments = departments;
   globalThis.__vms_visitRequests = visitRequests;
   globalThis.__vms_visitLogs = visitLogs;
@@ -94,8 +94,8 @@ export const findDepartmentById = (id: string): Department | undefined => {
   return departments.find(dept => dept.id === id);
 };
 
-export const findBranchById = (id: string): Branch | undefined => {
-  return branches.find(branch => branch.id === id);
+export const findLocationById = (id: string): Location | undefined => {
+  return locations.find(location => location.id === id);
 };
 
 export const findVisitRequestById = (id: string): VisitRequest | undefined => {

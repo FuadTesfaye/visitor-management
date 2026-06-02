@@ -21,26 +21,26 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 interface Department {
   id: string;
   name: string;
-  branchId: string;
-  branch?: {
+  locationId: string;
+  location?: {
     name: string;
   };
   createdAt: string;
 }
 
-interface Branch {
+interface Location {
   id: string;
   name: string;
 }
 
 export default function SuperAdminDepartments() {
   const [departments, setDepartments] = useState<Department[]>([]);
-  const [branches, setBranches] = useState<Branch[]>([]);
+  const [locations, setLocationes] = useState<Location[]>([]);
   const [loading, setLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [search, setSearch] = useState('');
   
-  const [formData, setFormData] = useState({ name: '', branchId: '' });
+  const [formData, setFormData] = useState({ name: '', locationId: '' });
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
@@ -49,9 +49,9 @@ export default function SuperAdminDepartments() {
 
   const fetchData = async () => {
     try {
-      const [deptRes, branchRes] = await Promise.all([
+      const [deptRes, locationRes] = await Promise.all([
         fetch('/api/departments'),
-        fetch('/api/branches')
+        fetch('/api/locations')
       ]);
       
       if (deptRes.ok) {
@@ -59,9 +59,9 @@ export default function SuperAdminDepartments() {
         setDepartments(data.departments);
       }
       
-      if (branchRes.ok) {
-        const data = await branchRes.json();
-        setBranches(data.branches);
+      if (locationRes.ok) {
+        const data = await locationRes.json();
+        setLocationes(data.locations);
       }
     } catch (e) {
       console.error(e);
@@ -72,7 +72,7 @@ export default function SuperAdminDepartments() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.name || !formData.branchId) return;
+    if (!formData.name || !formData.locationId) return;
     
     setIsSubmitting(true);
     try {
@@ -84,12 +84,12 @@ export default function SuperAdminDepartments() {
       
       if (res.ok) {
         const data = await res.json();
-        // Optimistically add branch name
-        const branch = branches.find(b => b.id === formData.branchId);
-        const newDept = { ...data.department, branch: { name: branch?.name || '' } };
+        // Optimistically add location name
+        const location = locations.find(b => b.id === formData.locationId);
+        const newDept = { ...data.department, location: { name: location?.name || '' } };
         
         setDepartments([...departments, newDept]);
-        setFormData({ name: '', branchId: '' });
+        setFormData({ name: '', locationId: '' });
         setIsDialogOpen(false);
         toast.success('Department added successfully');
       } else {
@@ -104,7 +104,7 @@ export default function SuperAdminDepartments() {
 
   const filteredDepartments = departments.filter(d => 
     d.name.toLowerCase().includes(search.toLowerCase()) ||
-    (d.branch?.name && d.branch.name.toLowerCase().includes(search.toLowerCase()))
+    (d.location?.name && d.location.name.toLowerCase().includes(search.toLowerCase()))
   );
 
   return (
@@ -117,7 +117,7 @@ export default function SuperAdminDepartments() {
               Departments
             </h1>
             <p className="text-neutral-500 dark:text-neutral-400 mt-1">
-              Manage organizational departments across all branches.
+              Manage organizational departments across all locations.
             </p>
           </div>
           
@@ -132,7 +132,7 @@ export default function SuperAdminDepartments() {
               <DialogHeader>
                 <DialogTitle>Add New Department</DialogTitle>
                 <DialogDescription>
-                  Create a new department within a specific branch.
+                  Create a new department within a specific location.
                 </DialogDescription>
               </DialogHeader>
               <form onSubmit={handleSubmit} className="space-y-4 pt-4">
@@ -146,24 +146,24 @@ export default function SuperAdminDepartments() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <label className="text-sm font-medium">Branch</label>
+                  <label className="text-sm font-medium">Location</label>
                   <Select 
-                    value={formData.branchId} 
-                    onValueChange={(v) => setFormData({...formData, branchId: v})}
+                    value={formData.locationId} 
+                    onValueChange={(v) => setFormData({...formData, locationId: v})}
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder="Select a branch" />
+                      <SelectValue placeholder="Select a location" />
                     </SelectTrigger>
                     <SelectContent>
-                      {branches.map(branch => (
-                        <SelectItem key={branch.id} value={branch.id}>{branch.name}</SelectItem>
+                      {locations.map(location => (
+                        <SelectItem key={location.id} value={location.id}>{location.name}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
                 </div>
                 <div className="pt-4 flex justify-end gap-2">
                   <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>Cancel</Button>
-                  <Button type="submit" disabled={isSubmitting || !formData.branchId || !formData.name}>
+                  <Button type="submit" disabled={isSubmitting || !formData.locationId || !formData.name}>
                     {isSubmitting ? 'Saving...' : 'Save Department'}
                   </Button>
                 </div>
@@ -209,7 +209,7 @@ export default function SuperAdminDepartments() {
                 <CardContent>
                   <div className="flex items-center gap-2 text-sm text-neutral-500 mt-2 bg-neutral-50 dark:bg-neutral-800/50 p-2 rounded-md">
                     <Building2 className="w-4 h-4 shrink-0" />
-                    <span className="truncate font-medium">{dept.branch?.name || 'Unknown Branch'}</span>
+                    <span className="truncate font-medium">{dept.location?.name || 'Unknown Location'}</span>
                   </div>
                 </CardContent>
               </Card>

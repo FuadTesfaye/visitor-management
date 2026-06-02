@@ -23,7 +23,7 @@ export async function GET(request: NextRequest) {
         email: true,
         name: true,
         role: true,
-        branchId: true,
+        locationId: true,
         departmentId: true,
         createdAt: true,
       }
@@ -41,7 +41,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
     }
 
-    const { name, email, password, role, branchId, departmentId } = await request.json();
+    const { name, email, password, role, locationId, departmentId } = await request.json();
 
     if (!name || !email || !password || !role) {
       return NextResponse.json({ error: 'Name, email, password, and role are required' }, { status: 400 });
@@ -64,7 +64,7 @@ export async function POST(request: NextRequest) {
         email: email.trim().toLowerCase(),
         password: hashed,
         role,
-        branchId: branchId || null,
+        locationId: locationId || null,
         departmentId: departmentId || null,
       },
       select: {
@@ -72,7 +72,7 @@ export async function POST(request: NextRequest) {
         email: true,
         name: true,
         role: true,
-        branchId: true,
+        locationId: true,
         departmentId: true,
         createdAt: true,
       }

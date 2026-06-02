@@ -16,10 +16,10 @@ export async function GET(request: NextRequest) {
     }
 
     const { searchParams } = new URL(request.url);
-    const branchId = searchParams.get('branchId');
+    const locationId = searchParams.get('locationId');
 
     const departments = await prisma.department.findMany({
-      where: branchId ? { branchId } : {},
+      where: locationId ? { locationId } : {},
       orderBy: { name: 'asc' }
     });
     return NextResponse.json({ departments });
@@ -35,13 +35,13 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
     }
 
-    const { name, branchId } = await request.json();
-    if (!name || !name.trim() || !branchId) {
-      return NextResponse.json({ error: 'Department name and branch are required' }, { status: 400 });
+    const { name, locationId, headId } = await request.json();
+    if (!name || !name.trim() || !locationId || !headId) {
+      return NextResponse.json({ error: 'Name, locationId, and headId are required' }, { status: 400 });
     }
 
     const department = await prisma.department.create({ 
-      data: { name: name.trim(), branchId } 
+      data: { name: name.trim(), locationId, headId } 
     });
     return NextResponse.json({ department }, { status: 201 });
   } catch (error) {

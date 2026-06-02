@@ -12,11 +12,11 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { Department, Branch } from '@/types';
+import { Department, Location } from '@/types';
 import { useLanguage } from '@/lib/language-context';
 
 export default function StaffOfflineWalkin() {
-  const [branches, setBranches] = useState<Branch[]>([]);
+  const [locations, setLocationes] = useState<Location[]>([]);
   const [departments, setDepartments] = useState<Department[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const { t } = useLanguage();
@@ -25,9 +25,9 @@ export default function StaffOfflineWalkin() {
     visitorName: '',
     faydaNumber: '',
     phone: '',
-    branchId: '',
+    locationId: '',
     departmentId: '',
-    personToMeet: '',
+    hostEmployeeName: '',
     purpose: '',
     date: format(new Date(), 'yyyy-MM-dd'),
     time: format(new Date(), 'HH:mm'),
@@ -35,22 +35,22 @@ export default function StaffOfflineWalkin() {
   });
 
   useEffect(() => {
-    fetch('/api/branches')
+    fetch('/api/locations')
       .then(res => res.json())
-      .then(data => setBranches(data.branches))
+      .then(data => setLocationes(data.locations))
       .catch(err => console.error(err));
   }, []);
 
   useEffect(() => {
-    if (formData.branchId) {
-      fetch(`/api/departments?branchId=${formData.branchId}`)
+    if (formData.locationId) {
+      fetch(`/api/departments?locationId=${formData.locationId}`)
         .then(res => res.json())
         .then(data => setDepartments(data.departments))
         .catch(err => console.error(err));
     } else {
       setDepartments([]);
     }
-  }, [formData.branchId]);
+  }, [formData.locationId]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -69,9 +69,9 @@ export default function StaffOfflineWalkin() {
           visitorName: '',
           faydaNumber: '',
           phone: '',
-          branchId: '',
+          locationId: '',
           departmentId: '',
-          personToMeet: '',
+          hostEmployeeName: '',
           purpose: '',
           date: format(new Date(), 'yyyy-MM-dd'),
           time: format(new Date(), 'HH:mm'),
@@ -144,17 +144,17 @@ export default function StaffOfflineWalkin() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="branch">{t('branch')}</Label>
+                  <Label htmlFor="location">{t('location')}</Label>
                   <Select 
-                    onValueChange={(value) => setFormData({ ...formData, branchId: value })}
-                    value={formData.branchId}
+                    onValueChange={(value) => setFormData({ ...formData, locationId: value })}
+                    value={formData.locationId}
                     required
                   >
-                    <SelectTrigger id="branch">
-                      <SelectValue placeholder="Select Branch" />
+                    <SelectTrigger id="location">
+                      <SelectValue placeholder="Select Location" />
                     </SelectTrigger>
                     <SelectContent>
-                      {branches.map((b) => (
+                      {locations.map((b) => (
                         <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>
                       ))}
                     </SelectContent>
@@ -166,7 +166,7 @@ export default function StaffOfflineWalkin() {
                     onValueChange={(value) => setFormData({ ...formData, departmentId: value })}
                     value={formData.departmentId}
                     required
-                    disabled={!formData.branchId}
+                    disabled={!formData.locationId}
                   >
                     <SelectTrigger id="department">
                       <SelectValue placeholder="Select Department" />
@@ -179,11 +179,11 @@ export default function StaffOfflineWalkin() {
                   </Select>
                 </div>
                 <div className="space-y-2 md:col-span-2">
-                  <Label htmlFor="st-personToMeet">Person To Meet <span className="text-neutral-400 font-normal">(optional)</span></Label>
+                  <Label htmlFor="st-hostEmployeeName">Person To Meet <span className="text-neutral-400 font-normal">(optional)</span></Label>
                   <Input 
-                    id="st-personToMeet" 
-                    value={formData.personToMeet}
-                    onChange={(e) => setFormData({ ...formData, personToMeet: e.target.value })}
+                    id="st-hostEmployeeName" 
+                    value={formData.hostEmployeeName}
+                    onChange={(e) => setFormData({ ...formData, hostEmployeeName: e.target.value })}
                     placeholder="Name of the person they are visiting"
                   />
                 </div>

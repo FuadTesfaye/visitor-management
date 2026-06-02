@@ -8,34 +8,44 @@ const getUserFromHeaders = (request: NextRequest) => {
   return { userId, role };
 };
 
-export async function GET(request: NextRequest) {
+type Params = { id: string };
+
+export async function PATCH(
+  request: NextRequest,
+  { params }: { params: Promise<Params> }
+) {
   try {
     const user = getUserFromHeaders(request);
     if (!user || user.role !== 'superadmin') {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
     }
 
-    const branches = await prisma.branch.findMany({ orderBy: { name: 'asc' } });
-    return NextResponse.json({ branches });
+    const { id } = await params;
+    const { name } = await request.json();
+    if (!name || !name.trim()) {
+      return NextResponse.json({ error: 'Location name is required' }, { status: 400 });
+    }
+
+    const location = await prisma.location.update({ where: { id }, data: { name: name.trim() } });
+    return NextResponse.json({ location });
   } catch (error) {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
 
-export async function POST(request: NextRequest) {
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: Promise<Params> }
+) {
   try {
     const user = getUserFromHeaders(request);
     if (!user || user.role !== 'superadmin') {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
     }
 
-    const { name } = await request.json();
-    if (!name || !name.trim()) {
-      return NextResponse.json({ error: 'Branch name is required' }, { status: 400 });
-    }
-
-    const branch = await prisma.branch.create({ data: { name: name.trim() } });
-    return NextResponse.json({ branch }, { status: 201 });
+    const { id } = await params;
+    await prisma.location.delete({ where: { id } });
+    return NextResponse.json({ message: 'Location deleted successfully' });
   } catch (error) {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }

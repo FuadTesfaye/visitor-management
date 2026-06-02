@@ -40,12 +40,12 @@ import { Badge } from '@/components/ui/badge';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { VisitRequest, Department, Branch } from '@/types';
+import { VisitRequest, Department, Location } from '@/types';
 import { useLanguage } from '@/lib/language-context';
 
 export default function StaffDashboard() {
   const [visitRequests, setVisitRequests] = useState<VisitRequest[]>([]);
-  const [branches, setBranches] = useState<Branch[]>([]);
+  const [locations, setLocationes] = useState<Location[]>([]);
   const [departments, setDepartments] = useState<Department[]>([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -58,9 +58,9 @@ export default function StaffDashboard() {
     visitorName: '',
     faydaNumber: '',
     phone: '',
-    branchId: '',
+    locationId: '',
     departmentId: '',
-    personToMeet: '',
+    hostEmployeeName: '',
     purpose: '',
     date: format(new Date(), 'yyyy-MM-dd'),
     time: format(new Date(), 'HH:mm')
@@ -71,28 +71,28 @@ export default function StaffDashboard() {
   }, []);
 
   useEffect(() => {
-    if (formData.branchId) {
-      fetchDepartments(formData.branchId);
+    if (formData.locationId) {
+      fetchDepartments(formData.locationId);
     } else {
       setDepartments([]);
     }
-  }, [formData.branchId]);
+  }, [formData.locationId]);
 
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [requestsRes, branchesRes] = await Promise.all([
+      const [requestsRes, locationsRes] = await Promise.all([
         fetch('/api/visits'),
-        fetch('/api/branches')
+        fetch('/api/locations')
       ]);
       
       if (requestsRes.ok) {
         const data = await requestsRes.json();
         setVisitRequests(data.data);
       }
-      if (branchesRes.ok) {
-        const data = await branchesRes.json();
-        setBranches(data.branches);
+      if (locationsRes.ok) {
+        const data = await locationsRes.json();
+        setLocationes(data.locations);
       }
     } catch (error) {
       toast.error('Failed to load dashboard data');
@@ -103,7 +103,7 @@ export default function StaffDashboard() {
 
   const fetchDepartments = async (bId: string) => {
     try {
-      const res = await fetch(`/api/departments?branchId=${bId}`);
+      const res = await fetch(`/api/departments?locationId=${bId}`);
       if (res.ok) {
         const data = await res.json();
         setDepartments(data.departments);
@@ -128,9 +128,9 @@ export default function StaffDashboard() {
           visitorName: '',
           faydaNumber: '',
           phone: '',
-          branchId: '',
+          locationId: '',
           departmentId: '',
-          personToMeet: '',
+          hostEmployeeName: '',
           purpose: '',
           date: format(new Date(), 'yyyy-MM-dd'),
           time: format(new Date(), 'HH:mm')

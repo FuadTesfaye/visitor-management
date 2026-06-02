@@ -127,7 +127,7 @@ export default function SecurityActiveVisitors() {
                         </TableCell>
                         <TableCell>
                           <div className="font-medium">{visit.departmentName}</div>
-                          <div className="text-xs text-neutral-500">To see: {visit.personToMeet}</div>
+                          <div className="text-xs text-neutral-500">To see: {visit.hostEmployeeName}</div>
                         </TableCell>
                         <TableCell>
                           <div className="flex items-center gap-1.5 text-sm text-neutral-600 dark:text-neutral-400">

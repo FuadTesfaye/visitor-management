@@ -56,49 +56,53 @@ interface SidebarItem {
 }
 
 const sidebarItems: SidebarItem[] = [
-  // VISITOR
-  { titleKey: 'dashboard', href: '/visitor/dashboard', icon: LayoutDashboard, roles: ['visitor'] },
-  { titleKey: 'My Requests', href: '/visitor/requests', icon: FileText, roles: ['visitor'] },
-  { titleKey: 'My Visits', href: '/visitor/visits', icon: Calendar, roles: ['visitor'] },
-  { titleKey: 'My QR Passes', href: '/visitor/passes', icon: QrCode, roles: ['visitor'] },
-  { titleKey: 'Notifications', href: '/visitor/notifications', icon: Bell, roles: ['visitor'] },
-  { titleKey: 'Profile', href: '/visitor/profile', icon: User, roles: ['visitor'] },
-  
-  // STAFF
+  // EMPLOYEE (staff)
   { titleKey: 'dashboard', href: '/staff/dashboard', icon: LayoutDashboard, roles: ['staff'] },
-  { titleKey: 'Pending Requests', href: '/staff/requests', icon: Clock, roles: ['staff'] },
-  { titleKey: 'Offline Visitors', href: '/staff/offline', icon: UserPlus, roles: ['staff'] },
-  { titleKey: 'Visitor Directory', href: '/staff/directory', icon: Users, roles: ['staff'] },
+  { titleKey: 'Create Request', href: '/staff/create', icon: UserPlus, roles: ['staff'] },
+  { titleKey: 'My Requests', href: '/staff/requests', icon: FileText, roles: ['staff'] },
+  { titleKey: 'Department Visitors', href: '/staff/department-visitors', icon: Users, roles: ['staff'] },
+  { titleKey: 'Notifications', href: '/staff/notifications', icon: Bell, roles: ['staff'] },
   { titleKey: 'Profile', href: '/staff/profile', icon: User, roles: ['staff'] },
   
-  // HEAD
+  // DEPARTMENT HEAD
   { titleKey: 'dashboard', href: '/head/dashboard', icon: LayoutDashboard, roles: ['head'] },
-  { titleKey: 'Approvals', href: '/head/approvals', icon: CheckCircle2, roles: ['head'] },
-  { titleKey: 'Calendar', href: '/head/calendar', icon: Calendar, roles: ['head'] },
-  { titleKey: 'History', href: '/head/history', icon: History, roles: ['head'] },
+  { titleKey: 'Visitor Requests', href: '/head/approvals', icon: CheckCircle2, roles: ['head'] },
+  { titleKey: 'Department Visitors', href: '/head/visitors', icon: Users, roles: ['head'] },
+  { titleKey: 'Employees', href: '/head/employees', icon: Network, roles: ['head'] },
   { titleKey: 'Reports', href: '/head/reports', icon: FileBarChart, roles: ['head'] },
+  { titleKey: 'Notifications', href: '/head/notifications', icon: Bell, roles: ['head'] },
+  { titleKey: 'Profile', href: '/head/profile', icon: User, roles: ['head'] },
   
   // SECURITY
   { titleKey: 'dashboard', href: '/security/dashboard', icon: LayoutDashboard, roles: ['security'] },
-  { titleKey: 'Scanner', href: '/security/scanner', icon: ScanLine, roles: ['security'] },
-  { titleKey: 'Active Visitors', href: '/security/active', icon: UserCheck, roles: ['security'] },
-  { titleKey: 'Expected', href: '/security/expected', icon: Clock, roles: ['security'] },
-  { titleKey: 'Incidents', href: '/security/incidents', icon: AlertTriangle, roles: ['security'] },
-  { titleKey: 'Logs', href: '/security/logs', icon: ScrollText, roles: ['security'] },
+  { titleKey: 'QR Scanner', href: '/security/scanner', icon: ScanLine, roles: ['security'] },
+  { titleKey: 'Check-In', href: '/security/checkin', icon: UserCheck, roles: ['security'] },
+  { titleKey: 'Check-Out', href: '/security/checkout', icon: LogOut, roles: ['security'] },
+  { titleKey: 'Active Visitors', href: '/security/active', icon: Activity, roles: ['security'] },
+  { titleKey: 'Visitor Search', href: '/security/search', icon: Users, roles: ['security'] },
+  { titleKey: 'Visitor Logs', href: '/security/logs', icon: ScrollText, roles: ['security'] },
+  { titleKey: 'Incident Reports', href: '/security/incidents', icon: AlertTriangle, roles: ['security'] },
+  { titleKey: 'Profile', href: '/security/profile', icon: User, roles: ['security'] },
   
   // SUPER ADMIN
   { titleKey: 'dashboard', href: '/superadmin/dashboard', icon: LayoutDashboard, roles: ['superadmin'] },
-  { titleKey: 'Branches', href: '/superadmin/branches', icon: Building2, roles: ['superadmin'] },
+  { titleKey: 'Visitor Requests', href: '/superadmin/requests', icon: Users, roles: ['superadmin'] },
   { titleKey: 'Departments', href: '/superadmin/departments', icon: Network, roles: ['superadmin'] },
-  { titleKey: 'Users', href: '/superadmin/users', icon: Users, roles: ['superadmin'] },
-  { titleKey: 'Approvals Monitor', href: '/superadmin/monitor', icon: Activity, roles: ['superadmin'] },
-  { titleKey: 'Analytics', href: '/superadmin/analytics', icon: LineChart, roles: ['superadmin'] },
-  { titleKey: 'Settings', href: '/superadmin/settings', icon: Settings, roles: ['superadmin'] },
+  { titleKey: 'Employees', href: '/superadmin/employees', icon: Users, roles: ['superadmin'] },
+  { titleKey: 'Approvals', href: '/superadmin/monitor', icon: CheckCircle2, roles: ['superadmin'] },
+  { titleKey: 'Security Ops', href: '/superadmin/security', icon: AlertTriangle, roles: ['superadmin'] },
+  { titleKey: 'Reports', href: '/superadmin/reports', icon: FileBarChart, roles: ['superadmin'] },
+  { titleKey: 'Notifications', href: '/superadmin/notifications', icon: Bell, roles: ['superadmin'] },
+  { titleKey: 'System Config', href: '/superadmin/config', icon: Settings, roles: ['superadmin'] },
+  { titleKey: 'Audit Logs', href: '/superadmin/logs', icon: ScrollText, roles: ['superadmin'] },
   
   // RECEPTIONIST
   { titleKey: 'dashboard', href: '/reception/dashboard', icon: LayoutDashboard, roles: ['receptionist'] },
-  { titleKey: 'Appointments', href: '/reception/appointments', icon: CalendarClock, roles: ['receptionist'] },
-  { titleKey: 'Queue', href: '/reception/queue', icon: Users, roles: ['receptionist'] },
+  { titleKey: 'Create Request', href: '/reception/create', icon: UserPlus, roles: ['receptionist'] },
+  { titleKey: 'Walk-In Visitors', href: '/reception/walkins', icon: Users, roles: ['receptionist'] },
+  { titleKey: 'Visitor Search', href: '/reception/search', icon: ScanLine, roles: ['receptionist'] },
+  { titleKey: "Today's Visitors", href: '/reception/today', icon: Clock, roles: ['receptionist'] },
+  { titleKey: 'Notifications', href: '/reception/notifications', icon: Bell, roles: ['receptionist'] },
 ];
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {

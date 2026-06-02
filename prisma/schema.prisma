@@ -14,14 +14,15 @@ model User {
   name         String
   phone        String?
   faydaNumber  String?
-  role         String   // 'visitor', 'staff', 'head', 'security', 'superadmin', 'receptionist'
-  branchId     String?
+  role         String   // 'staff', 'head', 'security', 'superadmin', 'receptionist'
+  position     String?
+  locationId   String?
   departmentId String?
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 }
 
-model Branch {
+model Location {
   id        String   @id @default(cuid())
   name      String
   address   String?
@@ -31,29 +32,31 @@ model Branch {
 }
 
 model Department {
-  id        String   @id @default(cuid())
-  name      String
-  branchId  String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id         String   @id @default(cuid())
+  name       String
+  headId     String   // Required: User ID of the department head
+  locationId String
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 }
 
 model VisitRequest {
   id                 String    @id @default(cuid())
-  visitorId          String
+  visitorId          String    // Arbitrary identifier for the physical visitor
   visitorName        String
   faydaNumber        String
   phone              String
-  branchId           String
+  locationId         String
+  locationName       String    @default("")
   departmentId       String
   departmentName     String
-  branchName         String    @default("")
-  personToMeet       String?
+  hostEmployeeId     String?   // New: Specific employee being visited
+  hostEmployeeName   String?
   purpose            String
   requestedDateTime  DateTime
-  status             String     @default("pending") // 'pending', 'approved', 'rejected', 'checked-in', 'checked-out', 'expired'
-  visitType          String     // 'digital', 'walk-in', 'offline', 'appointment'
-  walkIn             Boolean    @default(false)
+  status             String    @default("pending") // 'pending', 'approved', 'rejected', 'checked-in', 'checked-out', 'expired'
+  visitType          String    // 'digital', 'walk-in', 'offline', 'appointment'
+  walkIn             Boolean   @default(false)
   visitCode          String?
   smsOtp             String?
   submittedBy        String?
@@ -68,8 +71,8 @@ model VisitRequest {
   checkedInBy        String?
   checkedOutAt       DateTime?
   checkedOutBy       String?
-  createdAt          DateTime   @default(now())
-  updatedAt          DateTime   @updatedAt
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
 }
 
 model VisitLog {
@@ -86,7 +89,7 @@ model IncidentReport {
   id          String   @id @default(cuid())
   title       String
   description String
-  branchId    String
+  locationId  String   // Replaced branchId
   reportedBy  String   // User ID
   status      String   @default("open") // 'open', 'resolved'
   createdAt   DateTime @default(now())

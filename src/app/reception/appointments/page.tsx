@@ -66,7 +66,7 @@ export default function Appointments() {
   const filteredVisits = visits.filter(v => 
     v.visitorName.toLowerCase().includes(search.toLowerCase()) ||
     (v.visitCode && v.visitCode.toLowerCase().includes(search.toLowerCase())) ||
-    (v.personToMeet && v.personToMeet.toLowerCase().includes(search.toLowerCase()))
+    (v.hostEmployeeName && v.hostEmployeeName.toLowerCase().includes(search.toLowerCase()))
   );
 
   return (
@@ -140,7 +140,7 @@ export default function Appointments() {
                           </div>
                         </TableCell>
                         <TableCell>
-                          <div className="font-medium">{visit.personToMeet}</div>
+                          <div className="font-medium">{visit.hostEmployeeName}</div>
                           <div className="text-xs text-neutral-500">{visit.departmentName}</div>
                         </TableCell>
                         <TableCell>

@@ -19,7 +19,8 @@ export const generateToken = (user: User): string => {
     email: user.email,
     name: user.name,
     role: user.role,
-    branchId: user.branchId,
+    position: user.position,
+    locationId: user.locationId,
     departmentId: user.departmentId,
   };
   return jwt.sign(payload, JWT_SECRET, { expiresIn: '24h' });
@@ -74,7 +75,8 @@ export const authenticateUser = async (email: string, password: string): Promise
     password: user.password,
     name: user.name,
     role: user.role as any,
-    branchId: user.branchId ?? undefined,
+    position: user.position ?? undefined,
+    locationId: user.locationId ?? undefined,
     departmentId: user.departmentId ?? undefined,
   };
   

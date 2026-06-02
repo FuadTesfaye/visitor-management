@@ -131,7 +131,7 @@ export default function SecurityExpectedVisitors() {
                         </TableCell>
                         <TableCell>
                           <div className="font-medium">{visit.departmentName}</div>
-                          <div className="text-xs text-neutral-500">Host: {visit.personToMeet}</div>
+                          <div className="text-xs text-neutral-500">Host: {visit.hostEmployeeName}</div>
                         </TableCell>
                         <TableCell>
                           <div className="flex items-center gap-1.5 text-sm font-medium text-neutral-900 dark:text-neutral-100">

@@ -1,7 +1,16 @@
 'use client';
 
-import VisitorProfile from '@/app/visitor/profile/page';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 export default function StaffProfile() {
-  return <VisitorProfile />;
+  return (
+    <Card className="max-w-xl mx-auto">
+      <CardHeader>
+        <CardTitle>My Profile</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <p>Profile details are managed by the System Administrator.</p>
+      </CardContent>
+    </Card>
+  );
 }

@@ -5,9 +5,9 @@ import { prisma } from '@/lib/db';
 const getUserFromHeaders = (request: NextRequest) => {
   const userId = request.headers.get('x-user-id');
   const role = request.headers.get('x-user-role');
-  const branchId = request.headers.get('x-user-branch-id');
+  const locationId = request.headers.get('x-user-location-id');
   if (!userId) return null;
-  return { userId, role, branchId };
+  return { userId, role, locationId };
 };
 
 export async function POST(request: NextRequest) {
@@ -78,9 +78,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Visit request not found. Please check the code, Fayda ID, or name.' }, { status: 404 });
     }
 
-    // Security check: Must be for THIS branch
-    if (user.branchId && targetRequest.branchId !== user.branchId) {
-      return NextResponse.json({ error: 'This visitor is registered for a different branch' }, { status: 403 });
+    // Security check: Must be for THIS location
+    if (user.locationId && targetRequest.locationId !== user.locationId) {
+      return NextResponse.json({ error: 'This visitor is registered for a different location' }, { status: 403 });
     }
 
     // Must be approved

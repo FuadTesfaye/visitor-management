@@ -1,6 +1,6 @@
-export type UserRole = 'visitor' | 'staff' | 'head' | 'security' | 'superadmin';
+export type UserRole = 'staff' | 'head' | 'security' | 'superadmin' | 'receptionist';
 
-export interface Branch {
+export interface Location {
   id: string;
   name: string;
 }
@@ -8,7 +8,8 @@ export interface Branch {
 export interface Department {
   id: string;
   name: string;
-  branchId: string;
+  headId: string;
+  locationId: string;
 }
 
 export interface User {
@@ -17,7 +18,8 @@ export interface User {
   password: string;
   name: string;
   role: UserRole;
-  branchId?: string;
+  position?: string;
+  locationId?: string;
   departmentId?: string;
   createdAt?: Date;
 }
@@ -28,11 +30,12 @@ export interface VisitRequest {
   visitorName: string;
   faydaNumber: string;
   phone: string;
-  branchId: string;
-  branchName: string;
+  locationId: string;
+  locationName: string;
   departmentId: string;
   departmentName: string;
-  personToMeet?: string;
+  hostEmployeeId?: string;
+  hostEmployeeName?: string;
   purpose: string;
   requestedDateTime: Date;
   status: 'pending' | 'approved' | 'rejected' | 'checked-in' | 'checked-out';
@@ -68,6 +71,7 @@ export interface AuthSession {
   email: string;
   name: string;
   role: UserRole;
-  branchId?: string;
+  position?: string;
+  locationId?: string;
   departmentId?: string;
 }

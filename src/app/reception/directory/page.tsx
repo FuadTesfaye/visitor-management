@@ -22,7 +22,7 @@ interface StaffMember {
   email: string;
   role: string;
   department: { name: string } | null;
-  branch: { name: string } | null;
+  location: { name: string } | null;
 }
 
 export default function StaffDirectory() {
@@ -52,7 +52,7 @@ export default function StaffDirectory() {
     s.name.toLowerCase().includes(search.toLowerCase()) ||
     s.email.toLowerCase().includes(search.toLowerCase()) ||
     (s.department?.name && s.department.name.toLowerCase().includes(search.toLowerCase())) ||
-    (s.branch?.name && s.branch.name.toLowerCase().includes(search.toLowerCase()))
+    (s.location?.name && s.location.name.toLowerCase().includes(search.toLowerCase()))
   );
 
   return (
@@ -73,7 +73,7 @@ export default function StaffDirectory() {
         <div className="relative w-full max-w-md">
           <Search className="absolute left-3 top-2.5 h-4 w-4 text-neutral-400" />
           <Input 
-            placeholder="Search by name, email, department, or branch..." 
+            placeholder="Search by name, email, department, or location..." 
             className="pl-9 bg-white dark:bg-neutral-900"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
@@ -121,7 +121,7 @@ export default function StaffDirectory() {
                           <div className="flex flex-col gap-1 text-sm text-neutral-600 dark:text-neutral-400">
                             <div className="flex items-center gap-1">
                               <Building2 className="w-3.5 h-3.5" />
-                              {person.branch?.name || 'Unassigned Branch'}
+                              {person.location?.name || 'Unassigned Location'}
                             </div>
                             <div className="flex items-center gap-1">
                               <Network className="w-3.5 h-3.5" />

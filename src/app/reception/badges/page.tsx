@@ -134,7 +134,7 @@ export default function BadgeManagement() {
                           {visit.visitCode}
                         </TableCell>
                         <TableCell>
-                          <div className="font-medium text-sm">{visit.personToMeet}</div>
+                          <div className="font-medium text-sm">{visit.hostEmployeeName}</div>
                           <div className="text-xs text-neutral-500">{visit.departmentName}</div>
                         </TableCell>
                         <TableCell>

@@ -47,9 +47,6 @@ export function proxy(request: NextRequest) {
   if (!pathname.startsWith('/api') && (isPublicRoute || pathname === '/')) {
     let dashboardUrl;
     switch (user.role) {
-      case 'visitor':
-        dashboardUrl = new URL('/visitor/dashboard', request.url);
-        break;
       case 'staff':
         dashboardUrl = new URL('/staff/dashboard', request.url);
         break;
@@ -62,6 +59,9 @@ export function proxy(request: NextRequest) {
       case 'superadmin':
         dashboardUrl = new URL('/superadmin/dashboard', request.url);
         break;
+      case 'receptionist':
+        dashboardUrl = new URL('/reception/dashboard', request.url);
+        break;
       default:
         console.warn(`[PROXY] Unknown user role: ${user.role}`);
         return NextResponse.next();
@@ -72,20 +72,20 @@ export function proxy(request: NextRequest) {
 
   // 4. Role-Based Access Control (RBAC)
   const rolePrefixes = {
-    visitor: '/visitor',
     staff: '/staff',
     head: '/head',
     security: '/security',
     superadmin: '/superadmin',
+    receptionist: '/reception',
   };
 
   for (const [role, prefix] of Object.entries(rolePrefixes)) {
     if (pathname.startsWith(prefix) && user.role !== role) {
       console.warn(`[PROXY] Unauthorized access attempt: User ${user.email} (${user.role}) -> ${pathname}`);
       // Redirect to their own dashboard instead of a generic login
-      const myDashboard = new URL(`${prefix}/dashboard`, request.url);
-      // Wait, we need to redirect them to *their* correct dashboard
-      const correctDashboard = new URL(`/${user.role}/dashboard`, request.url);
+      let correctDashboardUrl = `/${user.role}/dashboard`;
+      if (user.role === 'receptionist') correctDashboardUrl = '/reception/dashboard';
+      const correctDashboard = new URL(correctDashboardUrl, request.url);
       return NextResponse.redirect(correctDashboard);
     }
   }
@@ -96,8 +96,9 @@ export function proxy(request: NextRequest) {
   requestHeaders.set('x-user-role', user.role);
   requestHeaders.set('x-user-email', user.email);
   requestHeaders.set('x-user-name', user.name);
-  if (user.branchId) requestHeaders.set('x-user-branch-id', user.branchId);
+  if (user.locationId) requestHeaders.set('x-user-location-id', user.locationId);
   if (user.departmentId) requestHeaders.set('x-user-department-id', user.departmentId);
+  if (user.position) requestHeaders.set('x-user-position', user.position);
 
   return NextResponse.next({
     request: {
