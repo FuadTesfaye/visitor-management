@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { Badge as BadgeIcon, Search, AlertCircle, CheckCircle2, UserCircle2 } from 'lucide-react';
 import { toast } from 'sonner';
 import Image from 'next/image';
+import logoPic from '@/../public/logo.png';
 
 import DashboardLayout from '@/components/layouts/DashboardLayout';
 import { Card, CardContent } from '@/components/ui/card';
@@ -71,7 +72,7 @@ export default function BadgeManagement() {
       <div className="space-y-8">
         <div>
           <h1 className="text-3xl font-bold tracking-tight text-neutral-900 dark:text-neutral-100 flex items-center gap-3">
-            <Image src="/logo.png" alt="Tracon Logo" width={32} height={32} className="object-contain" />
+            <Image src={logoPic} alt="Tracon Logo" width={32} height={32} className="object-contain" />
             Badge Management
           </h1>
           <p className="text-neutral-500 dark:text-neutral-400 mt-1">

@@ -4,17 +4,15 @@ import { useState, useEffect } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
+import logoPic from '@/../public/logo.png';
 import { 
   LayoutDashboard, 
   QrCode, 
   Users, 
   LogOut, 
   Menu, 
-  X, 
   Bell,
   User,
-  ShieldCheck,
-  ClipboardList,
   Building2,
   Settings,
   FileText,
@@ -34,7 +32,7 @@ import {
   CalendarClock
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Separator } from '@/components/ui/separator';
 import { 
   DropdownMenu, 
@@ -53,7 +51,7 @@ import { LanguageSwitcher } from '@/components/language-switcher';
 interface SidebarItem {
   titleKey: string;
   href: string;
-  icon: any;
+  icon: React.ElementType;
   roles: string[];
 }
 
@@ -113,6 +111,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   useEffect(() => {
     fetchUser();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const fetchUser = async () => {
@@ -169,16 +168,15 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         isSidebarOpen ? "translate-x-0" : "-translate-x-full"
       )}>
         {/* Logo */}
-        <div className="h-16 flex items-center px-6 border-b border-white/10 shrink-0">
-          <Link href="/" className="flex items-center gap-2 font-bold text-xl tracking-tight text-white">
+        <div className="h-16 flex items-center px-6 border-b border-white/10 shrink-0 overflow-hidden">
+          <Link href="/" className="flex items-center gap-3 font-bold text-xl tracking-tight text-white min-w-0">
             <Image 
-              src="/logo.png" 
-              alt="Tracon Trading PLC" 
-              width={32} 
-              height={32}
-              className="object-contain"
+              src={logoPic}
+              alt="Logo" 
+              className="object-contain shrink-0 w-auto h-8"
+              priority
             />
-            <span>Tracon VMS</span>
+            <span className="truncate">Tracon VMS</span>
           </Link>
         </div>
 
@@ -231,15 +229,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         {/* Header */}
         <header className="h-16 bg-white dark:bg-neutral-900 border-b border-neutral-200 dark:border-neutral-800 flex items-center justify-between px-4 lg:px-8 shrink-0">
           {/* On mobile, we might just want to show the Logo or page title here since Menu is moved to bottom bar, but we'll keep the hamburger if they want the full sidebar */}
-          <div className="flex items-center lg:hidden gap-2">
+          <div className="flex items-center lg:hidden gap-3 min-w-0 flex-1">
             <Image 
-              src="/logo.png" 
+              src={logoPic}
               alt="Logo" 
-              width={28} 
-              height={28}
-              className="object-contain"
+              className="object-contain shrink-0 w-auto h-7"
+              priority
             />
-            <span className="font-bold text-lg text-primary dark:text-white">Tracon VMS</span>
+            <span className="font-bold text-lg text-primary dark:text-white truncate">Tracon VMS</span>
           </div>
 
           <div className="hidden lg:block font-semibold text-lg text-neutral-800 dark:text-neutral-200 capitalize">

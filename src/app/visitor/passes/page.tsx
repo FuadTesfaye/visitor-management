@@ -1,8 +1,9 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { QrCode as QrIcon, Clock, Calendar, CheckCircle2 } from 'lucide-react';
+import { QrCode as QrIcon, Clock, Calendar, CheckCircle2, Download, Share2 } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
+import logoPic from '@/../public/logo.png';
 import Image from 'next/image';
 
 import DashboardLayout from '@/components/layouts/DashboardLayout';
@@ -77,7 +78,7 @@ export default function VisitorPasses() {
                   </div>
                 )}
                 <CardHeader className="text-center pb-2 border-b border-neutral-100 dark:border-neutral-800 bg-white dark:bg-neutral-900 flex flex-col items-center">
-                  <Image src="/logo.png" alt="Tracon Logo" width={48} height={48} className="mb-2 object-contain" />
+                  <Image src={logoPic} alt="Tracon Logo" width={48} height={48} className="mb-2 object-contain" />
                   <CardTitle className="text-2xl font-black text-primary tracking-widest">{pass.visitCode}</CardTitle>
                   <CardDescription className="uppercase tracking-widest font-bold text-neutral-900 dark:text-neutral-100 mt-1">{pass.visitorName}</CardDescription>
                 </CardHeader>
@@ -89,7 +90,7 @@ export default function VisitorPasses() {
                       level="H"
                       includeMargin={false}
                       imageSettings={{
-                        src: "/logo.png",
+                        src: logoPic.src,
                         x: undefined,
                         y: undefined,
                         height: 40,

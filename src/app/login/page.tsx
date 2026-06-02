@@ -7,6 +7,7 @@ import { useForm } from 'react-hook-form';
 import * as z from 'zod';
 import { Loader2, KeyRound, Mail } from 'lucide-react';
 import { toast, Toaster } from 'sonner';
+import logoPic from '@/../public/logo.png';
 import Image from 'next/image';
 
 import { Button } from '@/components/ui/button';
@@ -99,8 +100,8 @@ export default function LoginPage() {
       {/* Left side - Brand/Info */}
       <div className="hidden lg:flex flex-col justify-between w-1/2 bg-primary text-primary-foreground p-12">
         <div className="flex items-center gap-4">
-          <div className="bg-white p-2 rounded-xl">
-            <Image src="/logo.png" alt="Tracon Trading PLC Logo" width={60} height={60} className="object-contain" />
+          <div className="w-16 h-16 rounded-2xl bg-white/10 flex items-center justify-center backdrop-blur-md border border-white/20 mb-6 shrink-0 relative overflow-hidden">
+            <Image src={logoPic} alt="Logo" className="object-contain p-2 w-auto h-auto" />
           </div>
           <span className="text-3xl font-bold tracking-tight text-white">Tracon VMS</span>
         </div>
@@ -123,11 +124,9 @@ export default function LoginPage() {
           <div className="flex flex-col items-center gap-2 text-center lg:hidden">
             <div className="mb-4 bg-white p-3 rounded-xl shadow-sm border border-neutral-100 dark:border-neutral-800">
               <Image 
-                src="/logo.png" 
-                alt="Tracon Trading PLC Logo" 
-                width={80} 
-                height={80}
-                className="object-contain"
+                src={logoPic}
+                alt="Logo" 
+                className="object-contain p-1 w-auto h-auto"
               />
             </div>
             <h1 className="text-2xl font-bold tracking-tight text-neutral-900 dark:text-neutral-100">

@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { ScanLine, QrCode, Search, CheckCircle2, XCircle, AlertTriangle } from 'lucide-react';
 import { toast } from 'sonner';
+import logoPic from '@/../public/logo.png';
 import Image from 'next/image';
 
 import DashboardLayout from '@/components/layouts/DashboardLayout';
@@ -96,7 +97,7 @@ export default function SecurityScanner() {
           <Card className="bg-neutral-900 border-neutral-800 text-white overflow-hidden flex flex-col">
             <CardHeader className="bg-neutral-950 border-b border-neutral-800">
               <CardTitle className="flex items-center gap-3 text-white">
-                <Image src="/logo.png" alt="Tracon Logo" width={24} height={24} className="object-contain" />
+                <Image src={logoPic} alt="Logo" width={32} height={32} className="object-contain" />
                 QR Camera
               </CardTitle>
             </CardHeader>
